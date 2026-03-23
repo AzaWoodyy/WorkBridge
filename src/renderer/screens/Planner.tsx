@@ -31,7 +31,8 @@ export function Planner() {
         </div>
       </div>
 
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-5">
+      <div className="overflow-x-auto pb-2">
+        <div className="grid min-w-max grid-flow-col auto-cols-[minmax(260px,1fr)] gap-6">
         {lanes.map((lane) => {
           const laneItems = planner
             ?.filter((state) => state.lane === lane.key)
@@ -39,7 +40,7 @@ export function Planner() {
             .filter(Boolean)
 
           return (
-            <div key={lane.key} className="flex flex-col gap-3">
+            <div key={lane.key} className="flex flex-col gap-3 min-w-[260px]">
               <div className="border-b border-border/60 pb-2">
                 <div className="text-sm font-semibold">{lane.label}</div>
                 <div className="text-xs text-muted-foreground">{lane.hint}</div>
@@ -65,6 +66,7 @@ export function Planner() {
             </div>
           )
         })}
+        </div>
       </div>
     </div>
   )
