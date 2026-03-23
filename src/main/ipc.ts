@@ -301,6 +301,7 @@ export function registerIpc() {
     async (_event, payload: { taskId: string; body: string }) => {
       const { token } = await getClickUpAuth()
       await addClickUpTaskComment(token, payload.taskId, payload.body)
+      await syncClickUpNow()
       return { ok: true }
     }
   )

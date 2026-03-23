@@ -119,35 +119,99 @@ export function useFlushAllMutation() {
 }
 
 export function useGitLabNoteMutation() {
-  return useMutation({ mutationFn: gitlabAddNote })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: gitlabAddNote,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      queryClient.invalidateQueries({ queryKey: ['links'] })
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] })
+    }
+  })
 }
 
 export function useClickUpCommentMutation() {
-  return useMutation({ mutationFn: clickupAddComment })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: clickupAddComment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      queryClient.invalidateQueries({ queryKey: ['links'] })
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] })
+    }
+  })
 }
 
 export function useRocketChatReplyMutation() {
-  return useMutation({ mutationFn: rocketChatThreadReply })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: rocketChatThreadReply,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      queryClient.invalidateQueries({ queryKey: ['links'] })
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] })
+    }
+  })
 }
 
 export function useRocketChatReactMutation() {
-  return useMutation({ mutationFn: rocketChatReact })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: rocketChatReact,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      queryClient.invalidateQueries({ queryKey: ['links'] })
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] })
+    }
+  })
 }
 
 export function useGitLabLabelsMutation() {
-  return useMutation({ mutationFn: gitlabUpdateLabels })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: gitlabUpdateLabels,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      queryClient.invalidateQueries({ queryKey: ['links'] })
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] })
+    }
+  })
 }
 
 export function useGitLabReviewersMutation() {
-  return useMutation({ mutationFn: gitlabUpdateReviewers })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: gitlabUpdateReviewers,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      queryClient.invalidateQueries({ queryKey: ['links'] })
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] })
+    }
+  })
 }
 
 export function useGitLabApproveMutation() {
-  return useMutation({ mutationFn: gitlabApprove })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: gitlabApprove,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      queryClient.invalidateQueries({ queryKey: ['links'] })
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] })
+    }
+  })
 }
 
 export function useGitLabUnapproveMutation() {
-  return useMutation({ mutationFn: gitlabUnapprove })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: gitlabUnapprove,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      queryClient.invalidateQueries({ queryKey: ['links'] })
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] })
+    }
+  })
 }
 
 export function useCreateLinkMutation() {

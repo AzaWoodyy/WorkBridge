@@ -1,7 +1,7 @@
 {
   "name": "workbridge",
   "private": true,
-  "version": "0.1.3",
+  "version": "0.1.5",
   "main": "dist/main/index.cjs",
   "type": "module",
   "description": "WorkBridge desktop app",
@@ -68,6 +68,6 @@
       "icon": "build/icon.png",
       "target": "dmg"
     },
-    "buildVersion": "0.1.3+22439f9"
+    "buildVersion": "0.1.5+4f489ab"
   }
 }

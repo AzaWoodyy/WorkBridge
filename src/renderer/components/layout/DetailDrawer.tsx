@@ -64,12 +64,22 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
   const [rocketReply, setRocketReply] = useState('')
   const [rocketEmoji, setRocketEmoji] = useState('')
 
-  const rocketQuickReactions = ['👍', '✅', '👀', '🔥', '🎉', '🙏', '🧠', '📝']
+  const rocketQuickReactions = [':eyes:', ':ping_pong:', ':white_check_mark:', ':hourglass:']
   const displayRocketEmoji = (value: string) => {
     if (!value) return value
     const normalized = value.startsWith(':') ? value : value.length > 2 ? `:${value.replace(/:/g, '')}:` : value
     const converted = joypixels.shortnameToUnicode(normalized)
     return converted || value
+  }
+  const normalizeRocketEmoji = (value: string) => {
+    if (!value) return value
+    if (value.startsWith(':') && value.endsWith(':')) return value
+    const short = joypixels.toShort(value)
+    const match = short.match(/:[a-z0-9_+-]+:/i)
+    if (match) return match[0]
+    if (value.startsWith(':')) return value
+    if (value.length > 2) return `:${value.replace(/:/g, '')}:`
+    return value
   }
   const linkOpen = useAppStore((state) => state.linkModalOpen)
   const setLinkOpen = useAppStore((state) => state.setLinkModalOpen)
@@ -513,7 +523,7 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                         rocketReactMutation.mutate({ messageId, emoji, shouldReact: true })
                       }}
                     >
-                      {emoji}
+                      {displayRocketEmoji(emoji)}
                     </button>
                   ))}
                 </div>
@@ -527,7 +537,7 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                       placeholder=":eyes: or 👀"
                     />
                     <span className="text-lg">
-                      {rocketEmoji ? displayRocketEmoji(rocketEmoji.startsWith(':') ? rocketEmoji : rocketEmoji) : '✨'}
+                      {rocketEmoji ? displayRocketEmoji(normalizeRocketEmoji(rocketEmoji)) : '✨'}
                     </span>
                   </div>
                 </label>
@@ -537,11 +547,7 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                   onClick={() => {
                     if (!rocketEmoji.trim()) return
                     const messageId = item.id.replace('rc-msg-', '')
-                    const normalized = rocketEmoji.startsWith(':')
-                      ? rocketEmoji
-                      : rocketEmoji.length > 2
-                        ? `:${rocketEmoji.replace(/:/g, '')}:`
-                        : rocketEmoji
+                    const normalized = normalizeRocketEmoji(rocketEmoji)
                     rocketReactMutation.mutate({ messageId, emoji: normalized, shouldReact: true })
                     setRocketEmoji('')
                   }}
