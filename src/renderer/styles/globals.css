@@ -1,0 +1,219 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 30% 98%;
+  --foreground: 220 20% 12%;
+  --card: 210 28% 98%;
+  --card-foreground: 220 20% 12%;
+  --popover: 210 28% 98%;
+  --popover-foreground: 220 20% 12%;
+  --primary: 285 70% 46%;
+  --primary-foreground: 285 40% 98%;
+  --secondary: 210 18% 92%;
+  --secondary-foreground: 220 18% 20%;
+  --muted: 210 22% 94%;
+  --muted-foreground: 215 12% 40%;
+  --accent: 285 35% 90%;
+  --accent-foreground: 285 20% 14%;
+  --destructive: 0 68% 50%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214 14% 86%;
+  --input: 214 14% 84%;
+  --ring: 285 60% 62%;
+  --radius: 12px;
+
+  --surface: 210 28% 98%;
+  --surface-elevated: 0 0% 100%;
+  --hairline: 214 14% 86%;
+  --text-primary: 220 20% 12%;
+  --text-secondary: 218 12% 32%;
+  --text-muted: 215 10% 48%;
+  --accent: 285 70% 46%;
+  --success: 152 45% 36%;
+  --warning: 32 80% 45%;
+  --danger: 0 70% 50%;
+  --info: 270 55% 50%;
+}
+
+.dark {
+  --background: 220 24% 9%;
+  --foreground: 210 20% 92%;
+  --card: 220 22% 11%;
+  --card-foreground: 210 20% 92%;
+  --popover: 220 24% 10%;
+  --popover-foreground: 210 20% 92%;
+  --primary: 285 80% 62%;
+  --primary-foreground: 270 28% 10%;
+  --secondary: 220 16% 16%;
+  --secondary-foreground: 210 20% 92%;
+  --muted: 220 12% 16%;
+  --muted-foreground: 215 12% 64%;
+  --accent: 270 16% 18%;
+  --accent-foreground: 285 20% 92%;
+  --destructive: 0 60% 52%;
+  --destructive-foreground: 210 20% 92%;
+  --border: 220 12% 18%;
+  --input: 220 12% 22%;
+  --ring: 285 70% 60%;
+
+  --surface: 220 22% 11%;
+  --surface-elevated: 220 18% 14%;
+  --hairline: 220 12% 18%;
+  --text-primary: 210 20% 92%;
+  --text-secondary: 215 12% 74%;
+  --text-muted: 215 10% 60%;
+  --accent: 285 80% 62%;
+  --success: 152 45% 48%;
+  --warning: 32 80% 55%;
+  --danger: 0 65% 55%;
+  --info: 270 55% 60%;
+}
+
+.oled {
+  --background: 0 0% 0%;
+  --foreground: 210 15% 92%;
+  --card: 0 0% 5%;
+  --card-foreground: 210 15% 92%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 210 15% 92%;
+  --primary: 285 85% 64%;
+  --primary-foreground: 0 0% 6%;
+  --secondary: 0 0% 9%;
+  --secondary-foreground: 210 15% 92%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 215 12% 66%;
+  --accent: 0 0% 12%;
+  --accent-foreground: 210 15% 92%;
+  --destructive: 0 70% 52%;
+  --destructive-foreground: 210 15% 92%;
+  --border: 0 0% 13%;
+  --input: 0 0% 14%;
+  --ring: 285 85% 64%;
+
+  --surface: 0 0% 3%;
+  --surface-elevated: 0 0% 8%;
+  --surface-overlay: 0 0% 10%;
+  --surface-hover: 0 0% 12%;
+  --surface-selected: 0 0% 14%;
+  --hairline: 0 0% 14%;
+  --text-primary: 210 15% 92%;
+  --text-secondary: 210 12% 76%;
+  --text-muted: 215 10% 60%;
+  --accent: 285 85% 64%;
+  --success: 150 50% 48%;
+  --warning: 32 80% 54%;
+  --danger: 0 65% 56%;
+  --info: 270 55% 60%;
+}
+
+* {
+  @apply border-border;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-family: "SF Pro Text", "SF Pro Display", "Inter", system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+}
+
+.surface {
+  background: hsl(var(--surface));
+}
+
+.surface-elevated {
+  background: hsl(var(--surface-elevated));
+}
+
+.surface-overlay {
+  background: hsl(var(--surface-overlay));
+}
+
+.surface-hover {
+  background: hsl(var(--surface-hover));
+}
+
+.surface-selected {
+  background: hsl(var(--surface-selected));
+}
+
+.hairline {
+  border-color: hsl(var(--hairline));
+}
+
+.text-secondary {
+  color: hsl(var(--text-secondary));
+}
+
+.text-muted {
+  color: hsl(var(--text-muted));
+}
+
+#root {
+  height: 100vh;
+}
+
+.glass {
+  background: linear-gradient(135deg, rgba(255,255,255,0.75), rgba(255,255,255,0.4));
+  backdrop-filter: blur(18px);
+}
+
+.dark .glass,
+.oled .glass {
+  background: linear-gradient(135deg, rgba(20,24,32,0.82), rgba(20,24,32,0.55));
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  font-weight: 600;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown p {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: hsl(var(--foreground));
+  overflow-wrap: anywhere;
+}
+
+.markdown a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  word-break: break-word;
+}
+
+.markdown ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.markdown ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.markdown blockquote {
+  border-left: 2px solid hsl(var(--border));
+  padding-left: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.line-clamp-5 {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
