@@ -2,7 +2,6 @@ import path from 'node:path'
 import { app, BrowserWindow, nativeImage, nativeTheme } from 'electron'
 import { fileURLToPath } from 'node:url'
 import { ensureSchema } from './db/init'
-import { seedDemoData } from './db/seed'
 import { registerIpc } from './ipc'
 import { startSyncLoop } from './sync'
 
@@ -43,7 +42,6 @@ app.whenReady().then(async () => {
   app.setName('WorkBridge')
   nativeTheme.themeSource = 'system'
   ensureSchema()
-  await seedDemoData()
   registerIpc()
   startSyncLoop()
   if (process.platform === 'darwin') {
