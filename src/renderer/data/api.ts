@@ -71,6 +71,26 @@ export async function testConnection(payload: { source: string; baseUrl?: string
   return window.workbridge.testConnection(payload)
 }
 
+export async function fetchGitLabProjects() {
+  return window.workbridge.listGitLabProjects()
+}
+
+export async function fetchGitLabGroups() {
+  return window.workbridge.listGitLabGroups()
+}
+
+export async function fetchClickUpLists() {
+  return window.workbridge.listClickUpLists()
+}
+
+export async function fetchClickUpEquipeOptions(listId: string) {
+  return window.workbridge.listClickUpEquipeOptions(listId)
+}
+
+export async function fetchRocketChatRooms() {
+  return window.workbridge.listRocketChatRooms()
+}
+
 export async function fetchSyncStatus(): Promise<SyncStatus[]> {
   return window.workbridge.getSyncStatus() as Promise<SyncStatus[]>
 }

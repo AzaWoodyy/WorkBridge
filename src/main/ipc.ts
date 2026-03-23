@@ -16,13 +16,15 @@ import {
 import {
   addGitLabMrNote,
   approveGitLabMr,
+  listGitLabGroups,
+  listGitLabProjects,
   testGitLabConnection,
   unapproveGitLabMr,
   updateGitLabMrAssigneesReviewers,
   updateGitLabMrLabels
 } from './integrations/gitlab'
-import { addClickUpTaskComment } from './integrations/clickup'
-import { postRocketChatThreadReply, reactRocketChatMessage } from './integrations/rocketchat'
+import { addClickUpTaskComment, listClickUpEquipeOptions, listClickUpLists } from './integrations/clickup'
+import { listRocketChatRooms, postRocketChatThreadReply, reactRocketChatMessage } from './integrations/rocketchat'
 
 const SERVICE_NAME = 'WorkBridge'
 const require = createRequire(import.meta.url)
@@ -196,6 +198,36 @@ export function registerIpc() {
       }
     }
   )
+
+  ipcMain.handle('workbridge:list-gitlab-projects', async () => {
+    const { baseUrl, token } = await getGitLabAuth()
+    const projects = await listGitLabProjects(baseUrl, token)
+    return { ok: true, projects }
+  })
+
+  ipcMain.handle('workbridge:list-gitlab-groups', async () => {
+    const { baseUrl, token } = await getGitLabAuth()
+    const groups = await listGitLabGroups(baseUrl, token)
+    return { ok: true, groups }
+  })
+
+  ipcMain.handle('workbridge:list-clickup-lists', async () => {
+    const { token } = await getClickUpAuth()
+    const lists = await listClickUpLists(token)
+    return { ok: true, lists }
+  })
+
+  ipcMain.handle('workbridge:list-clickup-equipe-options', async (_event, listId: string) => {
+    const { token } = await getClickUpAuth()
+    const options = await listClickUpEquipeOptions(token, listId)
+    return { ok: true, options }
+  })
+
+  ipcMain.handle('workbridge:list-rocketchat-rooms', async () => {
+    const { baseUrl, token, userId } = await getRocketChatAuth()
+    const rooms = await listRocketChatRooms(baseUrl, token, userId)
+    return { ok: true, rooms }
+  })
 
   ipcMain.handle('workbridge:get-sync-status', () => {
     return getSyncState()

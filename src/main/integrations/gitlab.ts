@@ -71,6 +71,26 @@ async function gitlabFetch<T>(baseUrl: string, token: string, path: string): Pro
   return { data, headers: response.headers }
 }
 
+export async function listGitLabProjects(baseUrl: string, token: string) {
+  const { data } = await gitlabFetch<any[]>(
+    baseUrl,
+    token,
+    '/projects?membership=true&simple=true&per_page=100&order_by=last_activity_at&sort=desc'
+  )
+  return (data ?? [])
+    .map((project) => project.path_with_namespace ?? project.name_with_namespace ?? project.name)
+    .filter(Boolean)
+}
+
+export async function listGitLabGroups(baseUrl: string, token: string) {
+  const { data } = await gitlabFetch<any[]>(
+    baseUrl,
+    token,
+    '/groups?min_access_level=10&per_page=100&order_by=name&sort=asc'
+  )
+  return (data ?? []).map((group) => group.full_path ?? group.name).filter(Boolean)
+}
+
 async function gitlabRequest<T>(
   baseUrl: string,
   token: string,

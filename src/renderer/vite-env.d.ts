@@ -13,6 +13,11 @@ declare global {
       saveConnection: (payload: { source: string; baseUrl?: string | null; accountLabel?: string | null; scopeJson?: string | null; enabled?: boolean }) => Promise<{ ok: boolean }>
       storeToken: (source: string, token: string) => Promise<{ ok: boolean }>
       testConnection: (payload: { source: string; baseUrl?: string; token?: string; userId?: string }) => Promise<{ ok: boolean; message?: string }>
+      listGitLabProjects: () => Promise<{ ok: boolean; projects: string[] }>
+      listGitLabGroups: () => Promise<{ ok: boolean; groups: string[] }>
+      listClickUpLists: () => Promise<{ ok: boolean; lists: Array<{ id: string; label: string }> }>
+      listClickUpEquipeOptions: (listId: string) => Promise<{ ok: boolean; options: { fieldId: string | null; options: Array<{ id: string; name: string }> } }>
+      listRocketChatRooms: () => Promise<{ ok: boolean; rooms: string[] }>
       getSyncStatus: () => Promise<unknown[]>
       getSyncCadence: () => Promise<{ minutes: number }>
       setSyncCadence: (minutes: number) => Promise<{ minutes: number }>

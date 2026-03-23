@@ -14,6 +14,11 @@ const api = {
   storeToken: (source: string, token: string) => ipcRenderer.invoke('workbridge:store-token', source, token),
   testConnection: (payload: { source: string; baseUrl?: string; token?: string; userId?: string }) =>
     ipcRenderer.invoke('workbridge:test-connection', payload),
+  listGitLabProjects: () => ipcRenderer.invoke('workbridge:list-gitlab-projects'),
+  listGitLabGroups: () => ipcRenderer.invoke('workbridge:list-gitlab-groups'),
+  listClickUpLists: () => ipcRenderer.invoke('workbridge:list-clickup-lists'),
+  listClickUpEquipeOptions: (listId: string) => ipcRenderer.invoke('workbridge:list-clickup-equipe-options', listId),
+  listRocketChatRooms: () => ipcRenderer.invoke('workbridge:list-rocketchat-rooms'),
   getSyncStatus: () => ipcRenderer.invoke('workbridge:get-sync-status'),
   getSyncCadence: () => ipcRenderer.invoke('workbridge:get-sync-cadence'),
   setSyncCadence: (minutes: number) => ipcRenderer.invoke('workbridge:set-sync-cadence', minutes),

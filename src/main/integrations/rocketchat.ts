@@ -98,6 +98,15 @@ async function fetchJoinedRooms(baseUrl: string, token: string, userId: string):
   return response.update ?? []
 }
 
+export async function listRocketChatRooms(baseUrl: string, token: string, userId: string) {
+  const rooms = await fetchJoinedRooms(baseUrl, token, userId)
+  return rooms.map((room) => {
+    const name = room.name ?? room.fname ?? room._id
+    const prefix = room.t === 'c' ? '#' : room.t === 'p' ? '#' : room.t === 'd' ? '@' : ''
+    return `${prefix}${name}`
+  })
+}
+
 async function resolveRoom(
   baseUrl: string,
   token: string,

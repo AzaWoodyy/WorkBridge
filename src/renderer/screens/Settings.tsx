@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
 import { Button } from '@renderer/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
+import { Combobox } from '@renderer/components/ui/combobox'
 import {
   useConnections,
   useConnectionMutation,
@@ -11,6 +12,13 @@ import {
   useSyncCadence,
   useSyncCadenceMutation
 } from '@renderer/data/useDbData'
+import {
+  fetchClickUpEquipeOptions,
+  fetchClickUpLists,
+  fetchGitLabGroups,
+  fetchGitLabProjects,
+  fetchRocketChatRooms
+} from '@renderer/data/api'
 import type { Connection } from '@renderer/data/types'
 
 type TestState = { status: 'idle' | 'testing' | 'success' | 'error'; message?: string }
@@ -102,6 +110,38 @@ export function Settings() {
     }
   }
 
+  const loadGitLabProjects = async () => {
+    const result = await fetchGitLabProjects()
+    if (result?.projects) setGitlabProjectOptions(result.projects)
+  }
+
+  const loadGitLabGroups = async () => {
+    const result = await fetchGitLabGroups()
+    if (result?.groups) setGitlabGroupOptions(result.groups)
+  }
+
+  const loadClickUpLists = async () => {
+    const result = await fetchClickUpLists()
+    if (result?.lists) setClickupListOptions(result.lists)
+  }
+
+  const loadEquipeOptions = async () => {
+    const listId = clickup.listIds.split(',').map((entry) => entry.trim()).filter(Boolean)[0]
+    if (!listId) return
+    const result = await fetchClickUpEquipeOptions(listId)
+    if (result?.options?.options) {
+      setEquipeOptions(result.options.options)
+    }
+    if (result?.options?.fieldId) {
+      setClickup((prev) => ({ ...prev, equipeFieldId: result.options.fieldId }))
+    }
+  }
+
+  const loadRocketRooms = async () => {
+    const result = await fetchRocketChatRooms()
+    if (result?.rooms) setRocketRoomOptions(result.rooms)
+  }
+
   const saveConnection = async (
     source: 'gitlab' | 'clickup' | 'rocketchat',
     payload: { baseUrl?: string; token?: string; accountLabel: string; scope?: string; enabled: boolean } | any,
@@ -170,12 +210,34 @@ export function Settings() {
   const [rocketError, setRocketError] = useState<string | null>(null)
   const [cadenceOpen, setCadenceOpen] = useState(false)
   const [cadenceMinutes, setCadenceMinutes] = useState(3)
+  const [gitlabProjectOptions, setGitlabProjectOptions] = useState<string[]>([])
+  const [gitlabGroupOptions, setGitlabGroupOptions] = useState<string[]>([])
+  const [clickupListOptions, setClickupListOptions] = useState<Array<{ id: string; label: string }>>([])
+  const [equipeOptions, setEquipeOptions] = useState<Array<{ id: string; name: string }>>([])
+  const [rocketRoomOptions, setRocketRoomOptions] = useState<string[]>([])
+
+  const appendToList = (current: string, value: string) => {
+    const entries = current
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+    if (entries.includes(value)) return current
+    return [...entries, value].join(', ')
+  }
 
   useEffect(() => {
     if (cadence?.minutes) {
       setCadenceMinutes(cadence.minutes)
     }
   }, [cadence?.minutes])
+
+  useEffect(() => {
+    loadGitLabProjects()
+    loadGitLabGroups()
+    loadClickUpLists()
+    loadEquipeOptions()
+    loadRocketRooms()
+  }, [])
 
   useEffect(() => {
     const gitlabConn = connMap.get('gitlab')
@@ -284,6 +346,16 @@ export function Settings() {
                 onChange={(event) => setGitlab((prev) => ({ ...prev, projects: event.target.value }))}
               />
             </label>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Combobox
+                options={gitlabProjectOptions.map((project) => ({ value: project, label: project }))}
+                placeholder="Pick project"
+                disabled={!gitlabProjectOptions.length}
+                onSelect={(option) =>
+                  setGitlab((prev) => ({ ...prev, projects: appendToList(prev.projects, option.value) }))
+                }
+              />
+            </div>
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Tracked groups</span>
               <input
@@ -292,6 +364,16 @@ export function Settings() {
                 onChange={(event) => setGitlab((prev) => ({ ...prev, groups: event.target.value }))}
               />
             </label>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Combobox
+                options={gitlabGroupOptions.map((group) => ({ value: group, label: group }))}
+                placeholder="Pick group"
+                disabled={!gitlabGroupOptions.length}
+                onSelect={(option) =>
+                  setGitlab((prev) => ({ ...prev, groups: appendToList(prev.groups, option.value) }))
+                }
+              />
+            </div>
             {gitlabError ? <div className="text-xs text-rose-500">{gitlabError}</div> : null}
             <div className="flex flex-wrap gap-2">
               <Button
@@ -365,6 +447,16 @@ export function Settings() {
                 placeholder="12345678, 87654321"
               />
             </label>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Combobox
+                options={clickupListOptions.map((list) => ({ value: list.id, label: list.label }))}
+                placeholder="Pick list"
+                disabled={!clickupListOptions.length}
+                onSelect={(option) =>
+                  setClickup((prev) => ({ ...prev, listIds: appendToList(prev.listIds, option.value) }))
+                }
+              />
+            </div>
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Equipe field ID</span>
               <input
@@ -389,6 +481,21 @@ export function Settings() {
                 onChange={(event) => setClickup((prev) => ({ ...prev, equipeOptionId: event.target.value }))}
               />
             </label>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Combobox
+                options={equipeOptions.map((option) => ({ value: option.id, label: option.name }))}
+                placeholder="Pick equipe"
+                disabled={!equipeOptions.length}
+                onSelect={(option) =>
+                  setClickup((prev) => ({
+                    ...prev,
+                    equipeValue:
+                      equipeOptions.find((entry) => entry.id === option.value)?.name ?? prev.equipeValue,
+                    equipeOptionId: option.value
+                  }))
+                }
+              />
+            </div>
             {clickupError ? <div className="text-xs text-rose-500">{clickupError}</div> : null}
             <div className="flex flex-wrap gap-2">
               <Button
@@ -477,6 +584,16 @@ export function Settings() {
                 onChange={(event) => setRocket((prev) => ({ ...prev, rooms: event.target.value }))}
               />
             </label>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Combobox
+                options={rocketRoomOptions.map((room) => ({ value: room, label: room }))}
+                placeholder="Pick room"
+                disabled={!rocketRoomOptions.length}
+                onSelect={(option) =>
+                  setRocket((prev) => ({ ...prev, rooms: appendToList(prev.rooms, option.value) }))
+                }
+              />
+            </div>
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Lookback window (days)</span>
               <input

@@ -44,6 +44,11 @@ type ClickUpTask = {
   }>
 }
 
+type ClickUpTeam = { id: string; name: string }
+type ClickUpSpace = { id: string; name: string }
+type ClickUpFolder = { id: string; name: string }
+type ClickUpList = { id: string; name: string }
+
 const CLICKUP_API = 'https://api.clickup.com/api/v2'
 
 async function clickupFetch<T>(token: string, path: string): Promise<T> {
@@ -59,6 +64,61 @@ async function clickupFetch<T>(token: string, path: string): Promise<T> {
   }
 
   return (await response.json()) as T
+}
+
+export async function listClickUpLists(token: string) {
+  const results: Array<{ id: string; label: string }> = []
+  const teams = await clickupFetch<{ teams: ClickUpTeam[] }>(token, '/team')
+
+  for (const team of teams.teams ?? []) {
+    const spaces = await clickupFetch<{ spaces: ClickUpSpace[] }>(
+      token,
+      `/team/${team.id}/space?archived=false`
+    )
+    for (const space of spaces.spaces ?? []) {
+      const lists = await clickupFetch<{ lists: ClickUpList[] }>(
+        token,
+        `/space/${space.id}/list?archived=false`
+      )
+      for (const list of lists.lists ?? []) {
+        results.push({ id: list.id, label: `${team.name} / ${space.name} / ${list.name}` })
+      }
+
+      const folders = await clickupFetch<{ folders: ClickUpFolder[] }>(
+        token,
+        `/space/${space.id}/folder?archived=false`
+      )
+      for (const folder of folders.folders ?? []) {
+        const folderLists = await clickupFetch<{ lists: ClickUpList[] }>(
+          token,
+          `/folder/${folder.id}/list?archived=false`
+        )
+        for (const list of folderLists.lists ?? []) {
+          results.push({ id: list.id, label: `${team.name} / ${space.name} / ${folder.name} / ${list.name}` })
+        }
+      }
+    }
+  }
+
+  return results
+}
+
+export async function listClickUpEquipeOptions(token: string, listId: string) {
+  const data = await clickupFetch<{ fields: ClickUpTask['custom_fields'] }>(token, `/list/${listId}/field`)
+  const fields = data.fields ?? []
+  const equipeField =
+    fields.find((field) => field.name?.toLowerCase() === 'equipe') ??
+    fields.find((field) => field.type === 'drop_down')
+  if (!equipeField || !equipeField.type_config?.options) {
+    return { fieldId: equipeField?.id ?? null, options: [] }
+  }
+  return {
+    fieldId: equipeField.id,
+    options: equipeField.type_config.options.map((option) => ({
+      id: option.id,
+      name: option.name
+    }))
+  }
 }
 
 async function clickupPost<T>(token: string, path: string, body: unknown): Promise<T> {
