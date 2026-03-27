@@ -1,7 +1,8 @@
 import { createRequire } from 'node:module'
 import { randomUUID } from 'node:crypto'
-import { ipcMain, shell } from 'electron'
+import { ipcMain, shell, Notification, BrowserWindow } from 'electron'
 import { db } from './db/db'
+import { sqlite } from './db/db'
 import { externalItems, links, plannerState, syncConnections, syncCursors } from './db/schema'
 import { and, eq } from 'drizzle-orm'
 import {
@@ -17,6 +18,7 @@ import {
   addGitLabMrNote,
   approveGitLabMr,
   listGitLabGroups,
+  listGitLabMembers,
   listGitLabProjects,
   testGitLabConnection,
   unapproveGitLabMr,
@@ -167,7 +169,7 @@ export function registerIpc() {
 
   ipcMain.handle(
     'workbridge:test-connection',
-    async (_event, payload: { source: string; baseUrl?: string; token?: string }) => {
+    async (_event, payload: { source: string; baseUrl?: string; token?: string; userId?: string }) => {
       try {
         if (payload.source === 'gitlab') {
           if (!payload.baseUrl || !payload.token) {
@@ -199,34 +201,90 @@ export function registerIpc() {
     }
   )
 
+  ipcMain.handle('workbridge:test-notification', async () => {
+    if (!Notification.isSupported()) {
+      return { ok: false, message: 'Notifications are not supported on this system.' }
+    }
+    const notification = new Notification({
+      title: 'WorkBridge',
+      body: 'Notifications are working.',
+      silent: false
+    })
+    notification.show()
+    return { ok: true }
+  })
+
+  ipcMain.handle('workbridge:open-devtools', () => {
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    if (!win) return { ok: false }
+    win.webContents.openDevTools({ mode: 'detach' })
+    return { ok: true }
+  })
+
   ipcMain.handle('workbridge:list-gitlab-projects', async () => {
-    const { baseUrl, token } = await getGitLabAuth()
-    const projects = await listGitLabProjects(baseUrl, token)
-    return { ok: true, projects }
+    try {
+      const { baseUrl, token } = await getGitLabAuth()
+      const projects = await listGitLabProjects(baseUrl, token)
+      return { ok: true, projects }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load projects.'
+      return { ok: false, message, projects: [] }
+    }
   })
 
   ipcMain.handle('workbridge:list-gitlab-groups', async () => {
-    const { baseUrl, token } = await getGitLabAuth()
-    const groups = await listGitLabGroups(baseUrl, token)
-    return { ok: true, groups }
+    try {
+      const { baseUrl, token } = await getGitLabAuth()
+      const groups = await listGitLabGroups(baseUrl, token)
+      return { ok: true, groups }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load groups.'
+      return { ok: false, message, groups: [] }
+    }
+  })
+
+  ipcMain.handle('workbridge:list-gitlab-members', async (_event, projectId: number) => {
+    try {
+      const { baseUrl, token } = await getGitLabAuth()
+      const members = await listGitLabMembers(baseUrl, token, projectId)
+      return { ok: true, members }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load members.'
+      return { ok: false, message, members: [] }
+    }
   })
 
   ipcMain.handle('workbridge:list-clickup-lists', async () => {
-    const { token } = await getClickUpAuth()
-    const lists = await listClickUpLists(token)
-    return { ok: true, lists }
+    try {
+      const { token } = await getClickUpAuth()
+      const lists = await listClickUpLists(token)
+      return { ok: true, lists }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load lists.'
+      return { ok: false, message, lists: [] }
+    }
   })
 
   ipcMain.handle('workbridge:list-clickup-equipe-options', async (_event, listId: string) => {
-    const { token } = await getClickUpAuth()
-    const options = await listClickUpEquipeOptions(token, listId)
-    return { ok: true, options }
+    try {
+      const { token } = await getClickUpAuth()
+      const options = await listClickUpEquipeOptions(token, listId)
+      return { ok: true, options }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load equipe options.'
+      return { ok: false, message, options: { fieldId: null, options: [] } }
+    }
   })
 
   ipcMain.handle('workbridge:list-rocketchat-rooms', async () => {
-    const { baseUrl, token, userId } = await getRocketChatAuth()
-    const rooms = await listRocketChatRooms(baseUrl, token, userId)
-    return { ok: true, rooms }
+    try {
+      const { baseUrl, token, userId } = await getRocketChatAuth()
+      const rooms = await listRocketChatRooms(baseUrl, token, userId)
+      return { ok: true, rooms }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load rooms.'
+      return { ok: false, message, rooms: [] }
+    }
   })
 
   ipcMain.handle('workbridge:get-sync-status', () => {
@@ -237,6 +295,69 @@ export function registerIpc() {
     return { minutes: getSyncCadence() }
   })
 
+  ipcMain.handle('workbridge:get-gitlab-diagnostics', () => {
+    const gitlabItems = db.select().from(externalItems).where(eq(externalItems.source, 'gitlab')).all()
+    const plannerRows = db.select().from(plannerState).all()
+    const linkRows = db.select().from(links).all()
+    const gitlabIds = new Set(gitlabItems.map((row) => row.id))
+
+    const plannerForGitLabRows = plannerRows.filter((row) => gitlabIds.has(row.itemId))
+    const orphanPlannerRows = plannerRows.filter((row) => row.itemId.startsWith('gl-mr-') && !gitlabIds.has(row.itemId))
+    const linksTouchingGitLab = linkRows.filter(
+      (row) => gitlabIds.has(row.fromItemId) || gitlabIds.has(row.toItemId)
+    )
+
+    const externalIdMap = new Map<string, string[]>()
+    for (const row of gitlabItems) {
+      const key = row.externalId
+      const list = externalIdMap.get(key) ?? []
+      list.push(row.id)
+      externalIdMap.set(key, list)
+    }
+
+    const duplicateExternalIds = Array.from(externalIdMap.entries())
+      .filter(([, ids]) => ids.length > 1)
+      .map(([externalId, ids]) => ({ externalId, ids }))
+
+    const connection = db.select().from(syncConnections).where(eq(syncConnections.source, 'gitlab')).get()
+    const recentAudit = sqlite
+      .prepare(
+        `
+        SELECT id, event_type as eventType, table_name as tableName, row_id as rowId, source, payload_json as payloadJson, created_at as createdAt
+        FROM sync_audit_log
+        WHERE source = 'gitlab'
+        ORDER BY id DESC
+        LIMIT 40
+      `
+      )
+      .all() as Array<{
+        id: number
+        eventType: string
+        tableName: string
+        rowId: string
+        source: string | null
+        payloadJson: string | null
+        createdAt: string
+      }>
+
+    return {
+      gitlabItemCount: gitlabItems.length,
+      gitlabPlannerCount: plannerForGitLabRows.length,
+      gitlabLinkCount: linksTouchingGitLab.length,
+      orphanPlannerCount: orphanPlannerRows.length,
+      duplicateExternalIds,
+      sampleIdentityMap: gitlabItems.slice(0, 20).map((row) => ({ id: row.id, externalId: row.externalId })),
+      recentAudit,
+      connection: connection
+        ? {
+            enabled: connection.enabled,
+            lastSyncAt: connection.lastSyncAt,
+            lastError: connection.lastError
+          }
+        : null
+    }
+  })
+
   ipcMain.handle('workbridge:set-sync-cadence', (_event, minutes: number) => {
     const value = setSyncCadence(minutes)
     return { minutes: value }
@@ -244,7 +365,7 @@ export function registerIpc() {
 
   ipcMain.handle('workbridge:trigger-sync', async (_event, source: string) => {
     if (source === 'gitlab') {
-      await syncGitLabNow({ full: true })
+      await syncGitLabNow({ full: true, trigger: 'manual' })
       return { ok: true }
     }
     if (source === 'clickup') {
@@ -323,7 +444,7 @@ export function registerIpc() {
     async (_event, payload: { projectId: number; iid: number; body: string }) => {
       const { baseUrl, token } = await getGitLabAuth()
       await addGitLabMrNote(baseUrl, token, payload.projectId, payload.iid, payload.body)
-      await syncGitLabNow({ full: false })
+      await syncGitLabNow({ full: false, trigger: 'mutation' })
       return { ok: true }
     }
   )
@@ -370,7 +491,7 @@ export function registerIpc() {
     async (_event, payload: { projectId: number; iid: number; labels: string[] }) => {
       const { baseUrl, token } = await getGitLabAuth()
       await updateGitLabMrLabels(baseUrl, token, payload.projectId, payload.iid, payload.labels)
-      await syncGitLabNow({ full: false })
+      await syncGitLabNow({ full: false, trigger: 'mutation' })
       return { ok: true }
     }
   )
@@ -387,7 +508,7 @@ export function registerIpc() {
         payload.assignees,
         payload.reviewers
       )
-      await syncGitLabNow({ full: false })
+      await syncGitLabNow({ full: false, trigger: 'mutation' })
       return { ok: true }
     }
   )
@@ -397,7 +518,7 @@ export function registerIpc() {
     async (_event, payload: { projectId: number; iid: number }) => {
       const { baseUrl, token } = await getGitLabAuth()
       await approveGitLabMr(baseUrl, token, payload.projectId, payload.iid)
-      await syncGitLabNow({ full: false })
+      await syncGitLabNow({ full: false, trigger: 'mutation' })
       return { ok: true }
     }
   )
@@ -407,7 +528,7 @@ export function registerIpc() {
     async (_event, payload: { projectId: number; iid: number }) => {
       const { baseUrl, token } = await getGitLabAuth()
       await unapproveGitLabMr(baseUrl, token, payload.projectId, payload.iid)
-      await syncGitLabNow({ full: false })
+      await syncGitLabNow({ full: false, trigger: 'mutation' })
       return { ok: true }
     }
   )

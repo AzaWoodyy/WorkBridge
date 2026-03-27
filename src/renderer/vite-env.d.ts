@@ -13,13 +13,34 @@ declare global {
       saveConnection: (payload: { source: string; baseUrl?: string | null; accountLabel?: string | null; scopeJson?: string | null; enabled?: boolean }) => Promise<{ ok: boolean }>
       storeToken: (source: string, token: string) => Promise<{ ok: boolean }>
       testConnection: (payload: { source: string; baseUrl?: string; token?: string; userId?: string }) => Promise<{ ok: boolean; message?: string }>
+      testNotification: () => Promise<{ ok: boolean; message?: string }>
+      openDevTools: () => Promise<{ ok: boolean }>
       listGitLabProjects: () => Promise<{ ok: boolean; projects: string[] }>
       listGitLabGroups: () => Promise<{ ok: boolean; groups: string[] }>
+      listGitLabMembers: (projectId: number) => Promise<{ ok: boolean; members: Array<{ id: number; username: string; name?: string | null }> }>
       listClickUpLists: () => Promise<{ ok: boolean; lists: Array<{ id: string; label: string }> }>
       listClickUpEquipeOptions: (listId: string) => Promise<{ ok: boolean; options: { fieldId: string | null; options: Array<{ id: string; name: string }> } }>
       listRocketChatRooms: () => Promise<{ ok: boolean; rooms: string[] }>
       getSyncStatus: () => Promise<unknown[]>
       getSyncCadence: () => Promise<{ minutes: number }>
+      getGitLabDiagnostics: () => Promise<{
+        gitlabItemCount: number
+        gitlabPlannerCount: number
+        gitlabLinkCount: number
+        orphanPlannerCount: number
+        duplicateExternalIds: Array<{ externalId: string; ids: string[] }>
+        sampleIdentityMap: Array<{ id: string; externalId: string }>
+        recentAudit: Array<{
+          id: number
+          eventType: string
+          tableName: string
+          rowId: string
+          source: string | null
+          payloadJson: string | null
+          createdAt: string
+        }>
+        connection: { enabled: boolean; lastSyncAt: string | null; lastError: string | null } | null
+      }>
       setSyncCadence: (minutes: number) => Promise<{ minutes: number }>
       triggerSync: (source: string) => Promise<{ ok: boolean }>
       flushAll: () => Promise<{ ok: boolean }>

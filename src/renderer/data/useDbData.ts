@@ -26,15 +26,33 @@ import {
 } from './api'
 
 export function useItems() {
-  return useQuery({ queryKey: ['items'], queryFn: fetchItems })
+  return useQuery({
+    queryKey: ['items'],
+    queryFn: fetchItems,
+    refetchOnWindowFocus: false,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: true
+  })
 }
 
 export function useLinks() {
-  return useQuery({ queryKey: ['links'], queryFn: fetchLinks })
+  return useQuery({
+    queryKey: ['links'],
+    queryFn: fetchLinks,
+    refetchOnWindowFocus: false,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: true
+  })
 }
 
 export function usePlanner() {
-  return useQuery({ queryKey: ['planner'], queryFn: fetchPlanner })
+  return useQuery({
+    queryKey: ['planner'],
+    queryFn: fetchPlanner,
+    refetchOnWindowFocus: false,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: true
+  })
 }
 
 export function useConnections() {
@@ -42,7 +60,7 @@ export function useConnections() {
 }
 
 export function useSyncStatus() {
-  return useQuery({ queryKey: ['sync-status'], queryFn: fetchSyncStatus, refetchInterval: 30000 })
+  return useQuery({ queryKey: ['sync-status'], queryFn: fetchSyncStatus, refetchOnWindowFocus: false, refetchInterval: 30000 })
 }
 
 export function useSyncCadence() {

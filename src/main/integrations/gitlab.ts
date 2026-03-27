@@ -1,5 +1,5 @@
 import { db } from '../db/db'
-import { externalItems, plannerState, syncConnections, links } from '../db/schema'
+import { externalItems, plannerState, links } from '../db/schema'
 import { eq, and, or } from 'drizzle-orm'
 import { notifyOnce } from '../notifications'
 
@@ -47,6 +47,12 @@ type ApprovalSummary = {
   approvedBy: string[]
 }
 
+type GitLabMember = {
+  id: number
+  username: string
+  name?: string | null
+}
+
 const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/$/, '')
 
 const apiUrl = (baseUrl: string, path: string) => `${normalizeBaseUrl(baseUrl)}/api/v4${path}`
@@ -89,6 +95,17 @@ export async function listGitLabGroups(baseUrl: string, token: string) {
     '/groups?min_access_level=10&per_page=100&order_by=name&sort=asc'
   )
   return (data ?? []).map((group) => group.full_path ?? group.name).filter(Boolean)
+}
+
+export async function listGitLabMembers(baseUrl: string, token: string, projectId: number) {
+  const members = await fetchPaginated<GitLabMember>(baseUrl, token, `/projects/${projectId}/members/all?`)
+  return members
+    .map((member) => ({
+      id: member.id,
+      username: member.username,
+      name: member.name ?? null
+    }))
+    .filter((member) => member.username)
 }
 
 async function gitlabRequest<T>(
@@ -208,15 +225,6 @@ async function fetchPipelineStatus(baseUrl: string, token: string, projectId: nu
   }
 }
 
-async function fetchMergeRequestState(baseUrl: string, token: string, projectId: number, iid: number) {
-  try {
-    const { data } = await gitlabFetch<any>(baseUrl, token, `/projects/${projectId}/merge_requests/${iid}`)
-    return data?.state ?? null
-  } catch (error) {
-    return null
-  }
-}
-
 const hasLinks = (itemId: string) => {
   const link = db
     .select()
@@ -250,7 +258,6 @@ export async function syncGitLab(connection: GitLabConnection & { updatedAfter?:
   const { baseUrl, token, scope } = connection
   const projectIds = scope.projects ?? []
   const groupIds = scope.groups ?? []
-
   const mrLists: GitLabMergeRequest[] = []
   const errors: string[] = []
   const updatedAfter = connection.updatedAfter ? `&updated_after=${encodeURIComponent(connection.updatedAfter)}` : ''
@@ -317,7 +324,9 @@ export async function syncGitLab(connection: GitLabConnection & { updatedAfter?:
     }
 
     const projectName = mr.references?.full?.split('!')[0] ?? `Project ${mr.project_id}`
-    const itemId = `gl-mr-${mr.project_id}-${mr.iid}`
+    const externalId = `${mr.project_id}-${mr.iid}`
+    const canonicalId = `gl-mr-${mr.project_id}-${mr.iid}`
+    const itemId = resolveStableGitLabItemId(externalId, canonicalId)
     const existing = db.select().from(externalItems).where(eq(externalItems.id, itemId)).get()
     const prevMeta = existing?.rawJson ? JSON.parse(existing.rawJson) : null
 
@@ -325,7 +334,7 @@ export async function syncGitLab(connection: GitLabConnection & { updatedAfter?:
       .values({
         id: itemId,
         source: 'gitlab',
-        externalId: `${mr.project_id}-${mr.iid}`,
+        externalId,
         itemType: 'merge_request',
         title: mr.title,
         bodySnippet: mr.description ?? '',
@@ -374,32 +383,8 @@ export async function syncGitLab(connection: GitLabConnection & { updatedAfter?:
     suggestLinksForMr(itemId, haystack)
   })
 
-  const connectionId = 'conn-gitlab'
-  db.update(syncConnections)
-    .set({ lastSyncAt: now, lastError: errors.length ? errors[0] : null })
-    .where(eq(syncConnections.id, connectionId))
-    .run()
-
-  const existingGitlab = db
-    .select()
-    .from(externalItems)
-    .where(eq(externalItems.source, 'gitlab'))
-    .all()
-  for (const row of existingGitlab) {
-    if (seen.has(row.externalId)) continue
-    const meta = row.rawJson ? JSON.parse(row.rawJson) : null
-    const projectId = meta?.projectId
-    const iid = meta?.iid
-    if (projectId && iid && hasLinks(row.id)) {
-      const state = await fetchMergeRequestState(baseUrl, token, projectId, iid)
-      if (state === 'merged') {
-        notifyOnce(`gl-merged-${row.id}`, 'MR merged', row.title)
-      }
-    }
-    db.delete(externalItems).where(eq(externalItems.id, row.id)).run()
-    db.delete(plannerState).where(eq(plannerState.itemId, row.id)).run()
-  }
-
+  // Keep local GitLab items/planner state stable across transient API gaps.
+  // We only upsert what we see; we do not hard-delete unseen rows during polling.
   return { synced: mrLists.length, errors }
 }
 
@@ -461,6 +446,61 @@ function suggestLinksForMr(mrItemId: string, text: string) {
       })
       .run()
   }
+}
+
+type GitLabExternalRow = typeof externalItems.$inferSelect
+type GitLabPlannerRow = typeof plannerState.$inferSelect
+
+const plannerWeight = (row?: GitLabPlannerRow) => {
+  if (!row) return 0
+  const hasCustomState =
+    row.lane !== 'inbox' ||
+    row.priority !== 'P3' ||
+    Boolean(row.pinned) ||
+    Boolean((row.personalNote ?? '').trim().length)
+  if (hasCustomState) return 120
+  return 50
+}
+
+const linkWeight = (itemId: string) => {
+  const linked = db
+    .select({ id: links.id })
+    .from(links)
+    .where(or(eq(links.fromItemId, itemId), eq(links.toItemId, itemId)))
+    .all().length
+  return linked > 0 ? 25 : 0
+}
+
+function resolveStableGitLabItemId(externalId: string, canonicalId: string) {
+  const rows = db
+    .select()
+    .from(externalItems)
+    .where(and(eq(externalItems.source, 'gitlab'), eq(externalItems.externalId, externalId)))
+    .all() as GitLabExternalRow[]
+
+  if (!rows.length) {
+    return canonicalId
+  }
+
+  const scored = rows
+    .map((row) => {
+      const planner = db.select().from(plannerState).where(eq(plannerState.itemId, row.id)).get()
+      const score =
+        plannerWeight(planner) +
+        linkWeight(row.id) +
+        (row.id === canonicalId ? 10 : 0) +
+        (row.id.startsWith('gl-mr-') ? 5 : 0)
+      return { row, planner, score }
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return a.row.createdAt.localeCompare(b.row.createdAt)
+    })
+
+  const winner = scored[0]!
+  // Non-destructive identity choice: keep all rows intact.
+  // We only choose which existing local id to upsert so local planner/link state remains stable.
+  return winner.row.id
 }
 
 export async function addGitLabMrNote(baseUrl: string, token: string, projectId: number, iid: number, body: string) {

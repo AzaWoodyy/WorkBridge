@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { db } from './db/db'
-import { syncConnections, syncCursors } from './db/schema'
+import { externalItems, plannerState, syncConnections, syncCursors } from './db/schema'
 import { eq } from 'drizzle-orm'
 import { syncGitLab } from './integrations/gitlab'
 import { syncClickUp } from './integrations/clickup'
@@ -16,9 +16,31 @@ type SyncState = {
   lastError?: string | null
 }
 
+export type GitLabSyncTrigger = 'startup' | 'poll' | 'manual' | 'mutation' | 'unknown'
+
 const SERVICE_NAME = 'WorkBridge'
 const DEFAULT_POLL_MINUTES = 3
 let pollInterval: NodeJS.Timeout | null = null
+let gitlabSyncInFlight: Promise<void> | null = null
+
+const ensurePlannerRowsForSource = (source: 'gitlab' | 'clickup' | 'rocketchat') => {
+  const now = new Date().toISOString()
+  const rows = db.select().from(externalItems).where(eq(externalItems.source, source)).all()
+  for (const row of rows) {
+    db.insert(plannerState)
+      .values({
+        itemId: row.id,
+        lane: 'inbox',
+        priority: 'P3',
+        pinned: false,
+        personalNote: null,
+        plannedFor: null,
+        updatedAt: now
+      })
+      .onConflictDoNothing()
+      .run()
+  }
+}
 
 const getPollMinutes = () => {
   const row = db
@@ -58,7 +80,7 @@ export const getSyncCadence = () => getPollMinutes()
 const scheduleSyncLoop = () => {
   const minutes = getPollMinutes()
   pollInterval = setInterval(() => {
-    syncGitLabNow({ full: false })
+    syncGitLabNow({ full: false, trigger: 'poll' })
     syncClickUpNow()
     syncRocketChatNow()
   }, minutes * 60 * 1000)
@@ -123,10 +145,19 @@ const getGitLabConfig = async (full: boolean) => {
   }
 }
 
-export async function syncGitLabNow(options?: { full?: boolean }) {
+export async function syncGitLabNow(options?: { full?: boolean; trigger?: GitLabSyncTrigger }) {
+  if (gitlabSyncInFlight) {
+    return gitlabSyncInFlight
+  }
+
+  gitlabSyncInFlight = (async () => {
   updateState('gitlab', { status: 'syncing', lastError: null })
   try {
-    const { config, error } = await getGitLabConfig(Boolean(options?.full))
+    const hasItems = Boolean(
+      db.select().from(externalItems).where(eq(externalItems.source, 'gitlab')).get()
+    )
+    const forceFull = Boolean(options?.full) || !hasItems
+    const { config, error } = await getGitLabConfig(forceFull)
     if (!config) {
       if (error) {
         updateState('gitlab', { status: 'error', lastError: error })
@@ -140,11 +171,31 @@ export async function syncGitLabNow(options?: { full?: boolean }) {
       return
     }
     const result = await syncGitLab(config)
-    updateState('gitlab', {
-      status: result.errors.length ? 'error' : 'idle',
-      lastSyncAt: new Date().toISOString(),
-      lastError: result.errors.length ? result.errors[0] : null
-    })
+    const finishedAt = new Date().toISOString()
+
+    if (result.errors.length === 0) {
+      // Advance cursor only on a clean sync to avoid skipping items after partial failures.
+      db.update(syncConnections)
+        .set({ lastSyncAt: finishedAt, lastError: null })
+        .where(eq(syncConnections.source, 'gitlab'))
+        .run()
+      updateState('gitlab', {
+        status: 'idle',
+        lastSyncAt: finishedAt,
+        lastError: null
+      })
+    } else {
+      // Keep the previous cursor so a later retry can recover missing projects/MRs.
+      db.update(syncConnections)
+        .set({ lastError: result.errors[0] })
+        .where(eq(syncConnections.source, 'gitlab'))
+        .run()
+      updateState('gitlab', {
+        status: 'error',
+        lastError: result.errors[0]
+      })
+    }
+
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     updateState('gitlab', { status: 'error', lastError: message })
@@ -156,7 +207,11 @@ export async function syncGitLabNow(options?: { full?: boolean }) {
     if (state.gitlab.status === 'syncing') {
       updateState('gitlab', { status: 'idle' })
     }
+    gitlabSyncInFlight = null
   }
+  })()
+
+  return gitlabSyncInFlight
 }
 
 const getClickUpConfig = async () => {
@@ -267,7 +322,11 @@ export async function syncRocketChatNow() {
 }
 
 export function startSyncLoop() {
-  syncGitLabNow({ full: false })
+  // Startup guardrail: persisted external items must remain visible before fresh sync completes.
+  ensurePlannerRowsForSource('gitlab')
+  ensurePlannerRowsForSource('clickup')
+  ensurePlannerRowsForSource('rocketchat')
+  syncGitLabNow({ full: false, trigger: 'startup' })
   syncClickUpNow()
   syncRocketChatNow()
   scheduleSyncLoop()

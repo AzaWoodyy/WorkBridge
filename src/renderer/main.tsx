@@ -5,7 +5,15 @@ import { App } from '@renderer/App'
 import { ThemeProvider } from '@renderer/components/ThemeProvider'
 import '@renderer/styles/globals.css'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 15_000,
+      gcTime: 30 * 60_000
+    }
+  }
+})
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
