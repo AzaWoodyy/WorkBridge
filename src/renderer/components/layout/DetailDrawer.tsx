@@ -25,8 +25,10 @@ import type { PlannerLane } from '@renderer/data/types'
 import { SourceBadge } from '@renderer/components/SourceBadge'
 import { StatusChip } from '@renderer/components/StatusChip'
 import { Button } from '@renderer/components/ui/button'
+import { UserMultiCombobox } from '@renderer/components/ui/user-multi-combobox'
 import { cn } from '@renderer/lib/utils'
 import { useAppStore } from '@renderer/store/appStore'
+import { fetchGitLabMembers } from '@renderer/data/api'
 
 const lanes: { key: PlannerLane; label: string }[] = [
   { key: 'inbox', label: 'Inbox' },
@@ -58,11 +60,14 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
   const [note, setNote] = useState('')
   const [mrComment, setMrComment] = useState('')
   const [mrLabels, setMrLabels] = useState('')
-  const [mrAssignees, setMrAssignees] = useState('')
-  const [mrReviewers, setMrReviewers] = useState('')
+  const [mrAssignees, setMrAssignees] = useState<string[]>([])
+  const [mrReviewers, setMrReviewers] = useState<string[]>([])
   const [clickupComment, setClickupComment] = useState('')
   const [rocketReply, setRocketReply] = useState('')
   const [rocketEmoji, setRocketEmoji] = useState('')
+  const [gitlabMembers, setGitlabMembers] = useState<Array<{ value: string; label?: string }>>([])
+  const [gitlabMembersLoading, setGitlabMembersLoading] = useState(false)
+  const [gitlabMembersError, setGitlabMembersError] = useState<string | null>(null)
 
   const rocketQuickReactions = [':eyes:', ':ping_pong:', ':white_check_mark:', ':hourglass:']
   const displayRocketEmoji = (value: string) => {
@@ -97,9 +102,46 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
     const metaAssignees = (item.meta?.assignees ?? []) as string[]
     const metaReviewers = (item.meta?.reviewers ?? []) as string[]
     setMrLabels(metaLabels.join(', '))
-    setMrAssignees(metaAssignees.join(', '))
-    setMrReviewers(metaReviewers.join(', '))
+    setMrAssignees(metaAssignees)
+    setMrReviewers(metaReviewers)
   }, [item])
+
+  useEffect(() => {
+    const projectId = item?.source === 'gitlab' ? item.meta?.projectId : null
+    if (!projectId) {
+      setGitlabMembers([])
+      return
+    }
+    let active = true
+    setGitlabMembersLoading(true)
+    setGitlabMembersError(null)
+    fetchGitLabMembers(projectId)
+      .then((response) => {
+        if (!active) return
+        if (!response?.ok) {
+          setGitlabMembers([])
+          setGitlabMembersError(response?.message ?? 'Failed to load members.')
+          return
+        }
+        const options = (response.members ?? []).map((member) => ({
+          value: member.username,
+          label: member.name ? `${member.name} (@${member.username})` : `@${member.username}`
+        }))
+        setGitlabMembers(options)
+      })
+      .catch((error) => {
+        if (!active) return
+        setGitlabMembers([])
+        setGitlabMembersError(error instanceof Error ? error.message : 'Failed to load members.')
+      })
+      .finally(() => {
+        if (!active) return
+        setGitlabMembersLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [item?.id, item?.source, item?.meta?.projectId])
 
 
   const relatedLinks = useMemo(() => {
@@ -146,6 +188,7 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
   }
 
   const meta = item?.meta ?? {}
+  const isApproved = Boolean(meta.approvals?.approved)
   const titleText = item.title.replace(/\s*\n\s*/g, ' ')
 
   return (
@@ -201,7 +244,23 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
         <div className="border-b border-border/60 pb-6">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Summary</div>
           <div className="markdown mt-3 text-sm text-foreground">
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji]}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkEmoji]}
+              components={{
+                a: ({ href, children }) => (
+                  <a
+                    href={href}
+                    className="text-primary underline"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      if (href) window.workbridge.openExternal(href)
+                    }}
+                  >
+                    {children}
+                  </a>
+                )
+              }}
+            >
               {item.snippet || 'No summary provided.'}
             </ReactMarkdown>
           </div>
@@ -227,6 +286,10 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Draft</span>
                 <span className="font-medium text-foreground text-right">{meta.draft ? 'Yes' : 'No'}</span>
+              </div>
+              <div className="flex items-start justify-between gap-3 min-w-0">
+                <span className="text-muted-foreground">Approved</span>
+                <span className="font-medium text-foreground text-right">{isApproved ? 'Yes' : 'No'}</span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Pipeline</span>
@@ -308,22 +371,29 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
               >
                 Update labels
               </Button>
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Assignees (usernames)</span>
-                <input
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  value={mrAssignees}
-                  onChange={(event) => setMrAssignees(event.target.value)}
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground">Assignees</span>
+                <UserMultiCombobox
+                  options={gitlabMembers}
+                  selected={mrAssignees}
+                  onChange={setMrAssignees}
+                  placeholder={gitlabMembersLoading ? 'Loading members…' : 'Select assignees'}
+                  disabled={gitlabMembersLoading || gitlabMembers.length === 0}
                 />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Reviewers (usernames)</span>
-                <input
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  value={mrReviewers}
-                  onChange={(event) => setMrReviewers(event.target.value)}
+                {gitlabMembersError ? (
+                  <div className="text-xs text-rose-500">{gitlabMembersError}</div>
+                ) : null}
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground">Reviewers</span>
+                <UserMultiCombobox
+                  options={gitlabMembers}
+                  selected={mrReviewers}
+                  onChange={setMrReviewers}
+                  placeholder={gitlabMembersLoading ? 'Loading members…' : 'Select reviewers'}
+                  disabled={gitlabMembersLoading || gitlabMembers.length === 0}
                 />
-              </label>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -331,13 +401,13 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                   gitlabReviewersMutation.mutate({
                     projectId: meta.projectId,
                     iid: meta.iid,
-                    assignees: mrAssignees.split(',').map((entry) => entry.trim()).filter(Boolean),
-                    reviewers: mrReviewers.split(',').map((entry) => entry.trim()).filter(Boolean)
-                  })
-                }
-              >
-                Update assignees & reviewers
-              </Button>
+                  assignees: mrAssignees,
+                  reviewers: mrReviewers
+                })
+              }
+            >
+              Update assignees & reviewers
+            </Button>
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="secondary"

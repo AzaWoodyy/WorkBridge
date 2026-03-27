@@ -85,12 +85,12 @@ export function CommandPalette() {
   ]
 
   const laneActions: CommandAction[] = [
-    { id: 'lane-inbox', label: 'Move to Inbox', shortcut: 'Cmd ⇧ 1', hint: 'Planner lane' },
-    { id: 'lane-today', label: 'Move to Today', shortcut: 'Cmd ⇧ 2', hint: 'Planner lane' },
-    { id: 'lane-this-week', label: 'Move to This week', shortcut: 'Cmd ⇧ 3', hint: 'Planner lane' },
-    { id: 'lane-later', label: 'Move to Later', shortcut: 'Cmd ⇧ 4', hint: 'Planner lane' },
-    { id: 'lane-waiting', label: 'Move to Waiting', shortcut: 'Cmd ⇧ 5', hint: 'Planner lane' },
-    { id: 'lane-done', label: 'Move to Done', shortcut: 'Cmd ⇧ 6', hint: 'Planner lane' }
+    { id: 'lane-inbox', label: 'Move to Inbox', shortcut: 'Cmd ⌥ 1', hint: 'Planner lane' },
+    { id: 'lane-today', label: 'Move to Today', shortcut: 'Cmd ⌥ 2', hint: 'Planner lane' },
+    { id: 'lane-this-week', label: 'Move to This week', shortcut: 'Cmd ⌥ 3', hint: 'Planner lane' },
+    { id: 'lane-later', label: 'Move to Later', shortcut: 'Cmd ⌥ 4', hint: 'Planner lane' },
+    { id: 'lane-waiting', label: 'Move to Waiting', shortcut: 'Cmd ⌥ 5', hint: 'Planner lane' },
+    { id: 'lane-done', label: 'Move to Done', shortcut: 'Cmd ⌥ 6', hint: 'Planner lane' }
   ].map((action, index) => ({
     ...action,
     disabled: !selectedItemId,

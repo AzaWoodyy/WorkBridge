@@ -71,12 +71,20 @@ export async function testConnection(payload: { source: string; baseUrl?: string
   return window.workbridge.testConnection(payload)
 }
 
+export async function testNotification() {
+  return window.workbridge.testNotification()
+}
+
 export async function fetchGitLabProjects() {
   return window.workbridge.listGitLabProjects()
 }
 
 export async function fetchGitLabGroups() {
   return window.workbridge.listGitLabGroups()
+}
+
+export async function fetchGitLabMembers(projectId: number) {
+  return window.workbridge.listGitLabMembers(projectId)
 }
 
 export async function fetchClickUpLists() {
@@ -97,6 +105,10 @@ export async function fetchSyncStatus(): Promise<SyncStatus[]> {
 
 export async function fetchSyncCadence(): Promise<{ minutes: number }> {
   return window.workbridge.getSyncCadence()
+}
+
+export async function fetchGitLabDiagnostics() {
+  return window.workbridge.getGitLabDiagnostics()
 }
 
 export async function updateSyncCadence(minutes: number): Promise<{ minutes: number }> {

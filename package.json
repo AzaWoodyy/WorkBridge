@@ -13,7 +13,8 @@
     "pack:mac": "node scripts/set-version.cjs && electron-vite build && electron-builder --mac",
     "postinstall": "electron-builder install-app-deps",
     "lint": "echo \"Add linting later\"",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:reliability": "node --test tests/gitlab-reliability.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",

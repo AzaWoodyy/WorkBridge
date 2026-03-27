@@ -5,6 +5,7 @@ import { useAppStore } from '@renderer/store/appStore'
 import type { PlannerLane } from '@renderer/data/types'
 
 const lanes: { key: PlannerLane; label: string; hint: string }[] = [
+  { key: 'inbox', label: 'To do', hint: 'Unplanned items' },
   { key: 'today', label: 'Today', hint: 'Top focus' },
   { key: 'this_week', label: 'This week', hint: 'Planned work' },
   { key: 'later', label: 'Later', hint: 'Backlog' },
@@ -27,12 +28,12 @@ export function Planner() {
           <p className="text-sm text-muted-foreground">Move items between lanes to plan your day.</p>
         </div>
         <div className="rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground">
-          Shortcuts: Cmd ⇧ 1-6
+          Shortcuts: Cmd ⌥ 1-6
         </div>
       </div>
 
       <div className="overflow-x-auto pb-2">
-        <div className="grid min-w-max grid-flow-col auto-cols-[minmax(260px,1fr)] gap-6">
+        <div className="grid min-w-max grid-flow-col auto-cols-[minmax(260px,320px)] gap-6">
         {lanes.map((lane) => {
           const laneItems = planner
             ?.filter((state) => state.lane === lane.key)
@@ -40,7 +41,7 @@ export function Planner() {
             .filter(Boolean)
 
           return (
-            <div key={lane.key} className="flex flex-col gap-3 min-w-[260px]">
+            <div key={lane.key} className="flex flex-col gap-3 min-w-[260px] max-w-[320px]">
               <div className="border-b border-border/60 pb-2">
                 <div className="text-sm font-semibold">{lane.label}</div>
                 <div className="text-xs text-muted-foreground">{lane.hint}</div>

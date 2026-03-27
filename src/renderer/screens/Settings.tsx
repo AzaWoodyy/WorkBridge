@@ -17,7 +17,8 @@ import {
   fetchClickUpLists,
   fetchGitLabGroups,
   fetchGitLabProjects,
-  fetchRocketChatRooms
+  fetchRocketChatRooms,
+  testNotification
 } from '@renderer/data/api'
 import type { Connection } from '@renderer/data/types'
 
@@ -111,35 +112,55 @@ export function Settings() {
   }
 
   const loadGitLabProjects = async () => {
-    const result = await fetchGitLabProjects()
-    if (result?.projects) setGitlabProjectOptions(result.projects)
+    try {
+      const result = await fetchGitLabProjects()
+      if (result?.projects) setGitlabProjectOptions(result.projects)
+    } catch {
+      setGitlabProjectOptions([])
+    }
   }
 
   const loadGitLabGroups = async () => {
-    const result = await fetchGitLabGroups()
-    if (result?.groups) setGitlabGroupOptions(result.groups)
+    try {
+      const result = await fetchGitLabGroups()
+      if (result?.groups) setGitlabGroupOptions(result.groups)
+    } catch {
+      setGitlabGroupOptions([])
+    }
   }
 
   const loadClickUpLists = async () => {
-    const result = await fetchClickUpLists()
-    if (result?.lists) setClickupListOptions(result.lists)
+    try {
+      const result = await fetchClickUpLists()
+      if (result?.lists) setClickupListOptions(result.lists)
+    } catch {
+      setClickupListOptions([])
+    }
   }
 
   const loadEquipeOptions = async () => {
     const listId = clickup.listIds.split(',').map((entry) => entry.trim()).filter(Boolean)[0]
     if (!listId) return
-    const result = await fetchClickUpEquipeOptions(listId)
-    if (result?.options?.options) {
-      setEquipeOptions(result.options.options)
-    }
-    if (result?.options?.fieldId) {
-      setClickup((prev) => ({ ...prev, equipeFieldId: result.options.fieldId }))
+    try {
+      const result = await fetchClickUpEquipeOptions(listId)
+      if (result?.options?.options) {
+        setEquipeOptions(result.options.options)
+      }
+      if (result?.options?.fieldId) {
+        setClickup((prev) => ({ ...prev, equipeFieldId: result.options.fieldId }))
+      }
+    } catch {
+      setEquipeOptions([])
     }
   }
 
   const loadRocketRooms = async () => {
-    const result = await fetchRocketChatRooms()
-    if (result?.rooms) setRocketRoomOptions(result.rooms)
+    try {
+      const result = await fetchRocketChatRooms()
+      if (result?.rooms) setRocketRoomOptions(result.rooms)
+    } catch {
+      setRocketRoomOptions([])
+    }
   }
 
   const saveConnection = async (
@@ -182,7 +203,7 @@ export function Settings() {
         }),
         enabled: payload.enabled
       })
-    } else {
+    } else if (source === 'rocketchat') {
       await connectionMutation.mutateAsync({
         source,
         baseUrl: payload.baseUrl ?? null,
@@ -210,6 +231,7 @@ export function Settings() {
   const [rocketError, setRocketError] = useState<string | null>(null)
   const [cadenceOpen, setCadenceOpen] = useState(false)
   const [cadenceMinutes, setCadenceMinutes] = useState(3)
+  const [notificationTest, setNotificationTest] = useState<string | null>(null)
   const [gitlabProjectOptions, setGitlabProjectOptions] = useState<string[]>([])
   const [gitlabGroupOptions, setGitlabGroupOptions] = useState<string[]>([])
   const [clickupListOptions, setClickupListOptions] = useState<Array<{ id: string; label: string }>>([])
@@ -232,12 +254,18 @@ export function Settings() {
   }, [cadence?.minutes])
 
   useEffect(() => {
-    loadGitLabProjects()
-    loadGitLabGroups()
-    loadClickUpLists()
-    loadEquipeOptions()
-    loadRocketRooms()
-  }, [])
+    if (connMap.get('gitlab')?.hasToken) {
+      loadGitLabProjects()
+      loadGitLabGroups()
+    }
+    if (connMap.get('clickup')?.hasToken) {
+      loadClickUpLists()
+      loadEquipeOptions()
+    }
+    if (connMap.get('rocketchat')?.hasToken) {
+      loadRocketRooms()
+    }
+  }, [connMap])
 
   useEffect(() => {
     const gitlabConn = connMap.get('gitlab')
@@ -281,6 +309,7 @@ export function Settings() {
         enabled: rocketConn.enabled
       }))
     }
+
   }, [connMap])
 
   return (
@@ -648,6 +677,27 @@ export function Settings() {
           <Button variant="secondary" size="sm" className="mt-4" onClick={() => setCadenceOpen(true)}>
             Adjust schedule
           </Button>
+        </div>
+
+        <div className="rounded-2xl border border-border/70 bg-card p-6">
+          <div className="text-sm font-semibold">Notifications</div>
+          <div className="mt-2 text-sm text-muted-foreground">
+            Test desktop notifications and confirm they are enabled in macOS Settings.
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mt-4"
+            onClick={async () => {
+              const result = await testNotification()
+              setNotificationTest(result.ok ? 'Notification sent.' : result.message ?? 'Notification failed.')
+            }}
+          >
+            Send test notification
+          </Button>
+          {notificationTest ? (
+            <div className="mt-2 text-xs text-muted-foreground">{notificationTest}</div>
+          ) : null}
         </div>
 
         <div className="rounded-2xl border border-rose-200/60 bg-rose-50/60 p-6 dark:border-rose-500/20 dark:bg-rose-500/10">

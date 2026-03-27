@@ -36,6 +36,12 @@ export function App() {
         return
       }
 
+      if ((event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === 'i') {
+        event.preventDefault()
+        window.workbridge.openDevTools()
+        return
+      }
+
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'r') {
         event.preventDefault()
         triggerSync.mutate('gitlab')
@@ -53,16 +59,16 @@ export function App() {
         return
       }
 
-      if ((event.metaKey || event.ctrlKey) && event.shiftKey) {
+      if ((event.metaKey || event.ctrlKey) && event.altKey) {
         const laneMap: Record<string, string> = {
-          '1': 'inbox',
-          '2': 'today',
-          '3': 'this_week',
-          '4': 'later',
-          '5': 'waiting',
-          '6': 'done'
+          Digit1: 'inbox',
+          Digit2: 'today',
+          Digit3: 'this_week',
+          Digit4: 'later',
+          Digit5: 'waiting',
+          Digit6: 'done'
         }
-        const lane = laneMap[event.key]
+        const lane = laneMap[event.code]
         if (lane && selectedItemId) {
           event.preventDefault()
           plannerMutation.mutate({ itemId: selectedItemId, lane })

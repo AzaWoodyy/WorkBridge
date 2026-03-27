@@ -31,6 +31,7 @@ export function ItemCard({
   const updatedDate = item.updatedAt ? new Date(item.updatedAt) : null
   const updatedText =
     updatedDate && !Number.isNaN(updatedDate.getTime()) ? updatedDate.toLocaleString() : '—'
+  const isApproved = item.source === 'gitlab' && Boolean(item.meta?.approvals?.approved)
 
   return (
     <button
@@ -44,6 +45,11 @@ export function ItemCard({
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <SourceBadge source={item.source} />
             <StatusChip status={item.status} />
+            {isApproved ? (
+              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                Approved
+              </span>
+            ) : null}
             {lane ? <PlanningChip lane={lane} /> : null}
           </div>
           <h3 className="text-base font-semibold leading-snug text-foreground line-clamp-2" title={item.title}>
@@ -72,7 +78,23 @@ export function ItemCard({
         <div className="text-xs text-muted-foreground shrink-0">{item.needsReview ? 'Review request' : 'Active work'}</div>
       </div>
       <div className="markdown line-clamp-5 text-sm text-muted-foreground break-words">
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji]}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkEmoji]}
+          components={{
+            a: ({ href, children }) => (
+              <a
+                href={href}
+                className="text-primary underline"
+                onClick={(event) => {
+                  event.preventDefault()
+                  if (href) window.workbridge.openExternal(href)
+                }}
+              >
+                {children}
+              </a>
+            )
+          }}
+        >
           {item.snippet}
         </ReactMarkdown>
       </div>

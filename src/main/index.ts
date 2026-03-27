@@ -36,6 +36,7 @@ const createWindow = () => {
   if (process.env.ELECTRON_RENDERER_URL) {
     win.webContents.openDevTools({ mode: 'detach' })
   }
+
 }
 
 app.whenReady().then(async () => {
