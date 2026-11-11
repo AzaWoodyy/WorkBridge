@@ -1,6 +1,7 @@
+import { openExternalUrl } from './security'
 import { createRequire } from 'node:module'
 import { randomUUID } from 'node:crypto'
-import { ipcMain, shell, Notification, BrowserWindow } from 'electron'
+import { ipcMain, Notification, BrowserWindow } from 'electron'
 import { db } from './db/db'
 import { sqlite } from './db/db'
 import { externalItems, links, plannerState, syncConnections, syncCursors } from './db/schema'
@@ -398,7 +399,7 @@ export function registerIpc() {
 
   ipcMain.handle('workbridge:open-external', async (_event, url: string) => {
     if (!url) return { ok: false }
-    await shell.openExternal(url)
+    await openExternalUrl(url)
     return { ok: true }
   })
 
