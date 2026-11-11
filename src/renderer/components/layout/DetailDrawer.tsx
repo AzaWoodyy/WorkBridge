@@ -494,9 +494,9 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Equipe</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.equipe ?? '—'}>
-                  {meta.equipe ?? '—'}
+                <span className="text-muted-foreground">Custom field</span>
+                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.customField ?? meta.equipe ?? '—'}>
+                  {meta.customField ?? meta.equipe ?? '—'}
                 </span>
               </div>
               {item.dueAt ? (

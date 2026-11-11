@@ -91,8 +91,8 @@ export async function fetchClickUpLists() {
   return window.workbridge.listClickUpLists()
 }
 
-export async function fetchClickUpEquipeOptions(listId: string) {
-  return window.workbridge.listClickUpEquipeOptions(listId)
+export async function fetchClickUpCustomFieldOptions(listId: string, field: string) {
+  return window.workbridge.listClickUpCustomFieldOptions(listId, field)
 }
 
 export async function fetchRocketChatRooms() {

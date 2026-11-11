@@ -224,13 +224,13 @@ const getClickUpConfig = async () => {
   const listIds = scope.listIds ?? scope.scope ?? []
   const teamId = scope.teamId ?? null
   const teamName = scope.teamName ?? null
-  const equipeFieldId = scope.equipeFieldId ?? null
-  const equipeValue = scope.equipeValue ?? null
-  const equipeOptionId = scope.equipeOptionId ?? null
+  const customFieldId = scope.customFieldId ?? scope.equipeFieldId ?? null
+  const customFieldValue = scope.customFieldValue ?? scope.equipeValue ?? null
+  const customFieldOptionId = scope.customFieldOptionId ?? scope.equipeOptionId ?? null
   if (!listIds.length) {
     return { config: null, error: 'Add at least one list id.' }
   }
-  return { config: { token, listIds, teamId, teamName, equipeFieldId, equipeValue, equipeOptionId }, error: null }
+  return { config: { token, listIds, teamId, teamName, customFieldId, customFieldValue, customFieldOptionId }, error: null }
 }
 
 const getRocketChatConfig = async () => {

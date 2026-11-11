@@ -13,7 +13,7 @@ import {
   useSyncCadenceMutation
 } from '@renderer/data/useDbData'
 import {
-  fetchClickUpEquipeOptions,
+  fetchClickUpCustomFieldOptions,
   fetchClickUpLists,
   fetchGitLabGroups,
   fetchGitLabProjects,
@@ -36,9 +36,9 @@ const clickupSchema = z.object({
   token: z.string().min(10, 'Token is required.'),
   accountLabel: z.string().min(2, 'Account label is required.'),
   listIds: z.string().optional(),
-  equipeFieldId: z.string().optional(),
-  equipeValue: z.string().optional(),
-  equipeOptionId: z.string().optional()
+  customFieldId: z.string().optional(),
+  customFieldValue: z.string().optional(),
+  customFieldOptionId: z.string().optional()
 })
 
 const rocketchatSchema = z.object({
@@ -77,10 +77,10 @@ export function Settings() {
   const [clickup, setClickup] = useState({
     token: '',
     accountLabel: connMap.get('clickup')?.accountLabel ?? 'ClickUp',
-    listIds: '123456789',
-    equipeFieldId: '8a31b62e-66b6-4635-af86-061ac827469e',
-    equipeValue: 'Team A',
-    equipeOptionId: '19f59c9d-71ca-4037-a2fb-ff24a906e1a3',
+    listIds: '',
+    customFieldId: '',
+    customFieldValue: '',
+    customFieldOptionId: '',
     enabled: connMap.get('clickup')?.enabled ?? false
   })
   const [rocket, setRocket] = useState({
@@ -138,19 +138,19 @@ export function Settings() {
     }
   }
 
-  const loadEquipeOptions = async () => {
+  const loadCustomFieldOptions = async () => {
     const listId = clickup.listIds.split(',').map((entry) => entry.trim()).filter(Boolean)[0]
     if (!listId) return
     try {
-      const result = await fetchClickUpEquipeOptions(listId)
+      const result = await fetchClickUpCustomFieldOptions(listId, clickup.customFieldId)
       if (result?.options?.options) {
-        setEquipeOptions(result.options.options)
+        setCustomFieldOptions(result.options.options)
       }
       if (result?.options?.fieldId) {
-        setClickup((prev) => ({ ...prev, equipeFieldId: result.options.fieldId }))
+        setClickup((prev) => ({ ...prev, customFieldId: result.options.fieldId }))
       }
     } catch {
-      setEquipeOptions([])
+      setCustomFieldOptions([])
     }
   }
 
@@ -197,9 +197,9 @@ export function Settings() {
           listIds: payload.listIds
             ? payload.listIds.split(',').map((entry: string) => entry.trim()).filter(Boolean)
             : [],
-          equipeFieldId: payload.equipeFieldId ? payload.equipeFieldId.trim() : null,
-          equipeValue: payload.equipeValue ? payload.equipeValue.trim() : null,
-          equipeOptionId: payload.equipeOptionId ? payload.equipeOptionId.trim() : null
+          customFieldId: payload.customFieldId ? payload.customFieldId.trim() : null,
+          customFieldValue: payload.customFieldValue ? payload.customFieldValue.trim() : null,
+          customFieldOptionId: payload.customFieldOptionId ? payload.customFieldOptionId.trim() : null
         }),
         enabled: payload.enabled
       })
@@ -235,7 +235,7 @@ export function Settings() {
   const [gitlabProjectOptions, setGitlabProjectOptions] = useState<string[]>([])
   const [gitlabGroupOptions, setGitlabGroupOptions] = useState<string[]>([])
   const [clickupListOptions, setClickupListOptions] = useState<Array<{ id: string; label: string }>>([])
-  const [equipeOptions, setEquipeOptions] = useState<Array<{ id: string; name: string }>>([])
+  const [customFieldOptions, setCustomFieldOptions] = useState<Array<{ id: string; name: string }>>([])
   const [rocketRoomOptions, setRocketRoomOptions] = useState<string[]>([])
 
   const appendToList = (current: string, value: string) => {
@@ -260,7 +260,7 @@ export function Settings() {
     }
     if (connMap.get('clickup')?.hasToken) {
       loadClickUpLists()
-      loadEquipeOptions()
+      loadCustomFieldOptions()
     }
     if (connMap.get('rocketchat')?.hasToken) {
       loadRocketRooms()
@@ -290,9 +290,9 @@ export function Settings() {
         ...prev,
         accountLabel: clickupConn.accountLabel ?? prev.accountLabel,
         listIds: (scope.listIds ?? []).join(', '),
-        equipeFieldId: scope.equipeFieldId ?? prev.equipeFieldId,
-        equipeValue: scope.equipeValue ?? prev.equipeValue,
-        equipeOptionId: scope.equipeOptionId ?? prev.equipeOptionId,
+        customFieldId: scope.customFieldId ?? scope.equipeFieldId ?? prev.customFieldId,
+        customFieldValue: scope.customFieldValue ?? scope.equipeValue ?? prev.customFieldValue,
+        customFieldOptionId: scope.customFieldOptionId ?? scope.equipeOptionId ?? prev.customFieldOptionId,
         enabled: clickupConn.enabled
       }))
     }
@@ -487,40 +487,41 @@ export function Settings() {
               />
             </div>
             <label className="space-y-1">
-              <span className="text-xs text-muted-foreground">Equipe field ID</span>
+              <span className="text-xs text-muted-foreground">Custom field name or ID</span>
               <input
                 className="w-full rounded-lg border border-border bg-background px-3 py-2"
-                value={clickup.equipeFieldId}
-                onChange={(event) => setClickup((prev) => ({ ...prev, equipeFieldId: event.target.value }))}
+                value={clickup.customFieldId}
+                onChange={(event) => setClickup((prev) => ({ ...prev, customFieldId: event.target.value }))}
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs text-muted-foreground">Equipe value</span>
+              <span className="text-xs text-muted-foreground">Option label</span>
               <input
                 className="w-full rounded-lg border border-border bg-background px-3 py-2"
-                value={clickup.equipeValue}
-                onChange={(event) => setClickup((prev) => ({ ...prev, equipeValue: event.target.value }))}
+                value={clickup.customFieldValue}
+                onChange={(event) => setClickup((prev) => ({ ...prev, customFieldValue: event.target.value }))}
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs text-muted-foreground">Equipe option ID</span>
+              <span className="text-xs text-muted-foreground">Option ID</span>
               <input
                 className="w-full rounded-lg border border-border bg-background px-3 py-2"
-                value={clickup.equipeOptionId}
-                onChange={(event) => setClickup((prev) => ({ ...prev, equipeOptionId: event.target.value }))}
+                value={clickup.customFieldOptionId}
+                onChange={(event) => setClickup((prev) => ({ ...prev, customFieldOptionId: event.target.value }))}
               />
             </label>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Button variant="outline" size="sm" onClick={loadCustomFieldOptions}>Load field options</Button>
               <Combobox
-                options={equipeOptions.map((option) => ({ value: option.id, label: option.name }))}
-                placeholder="Pick equipe"
-                disabled={!equipeOptions.length}
+                options={customFieldOptions.map((option) => ({ value: option.id, label: option.name }))}
+                placeholder="Pick option"
+                disabled={!customFieldOptions.length}
                 onSelect={(option) =>
                   setClickup((prev) => ({
                     ...prev,
-                    equipeValue:
-                      equipeOptions.find((entry) => entry.id === option.value)?.name ?? prev.equipeValue,
-                    equipeOptionId: option.value
+                    customFieldValue:
+                      customFieldOptions.find((entry) => entry.id === option.value)?.name ?? prev.customFieldValue,
+                    customFieldOptionId: option.value
                   }))
                 }
               />

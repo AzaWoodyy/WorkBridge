@@ -8,9 +8,9 @@ export type ClickUpConnection = {
   listIds: string[]
   teamId?: string | null
   teamName?: string | null
-  equipeFieldId?: string | null
-  equipeValue?: string | null
-  equipeOptionId?: string | null
+  customFieldId?: string | null
+  customFieldValue?: string | null
+  customFieldOptionId?: string | null
 }
 
 type ClickUpUser = {
@@ -103,18 +103,17 @@ export async function listClickUpLists(token: string) {
   return results
 }
 
-export async function listClickUpEquipeOptions(token: string, listId: string) {
+export async function listClickUpCustomFieldOptions(token: string, listId: string, field: string) {
   const data = await clickupFetch<{ fields: ClickUpTask['custom_fields'] }>(token, `/list/${listId}/field`)
   const fields = data.fields ?? []
-  const equipeField =
-    fields.find((field) => field.name?.toLowerCase() === 'equipe') ??
-    fields.find((field) => field.type === 'drop_down')
-  if (!equipeField || !equipeField.type_config?.options) {
-    return { fieldId: equipeField?.id ?? null, options: [] }
+  const customFieldField =
+    fields.find((entry) => entry.id === field || entry.name?.toLowerCase() === field.toLowerCase())
+  if (!customFieldField || !customFieldField.type_config?.options) {
+    return { fieldId: customFieldField?.id ?? null, options: [] }
   }
   return {
-    fieldId: equipeField.id,
-    options: equipeField.type_config.options.map((option) => ({
+    fieldId: customFieldField.id,
+    options: customFieldField.type_config.options.map((option) => ({
       id: option.id,
       name: option.name
     }))
@@ -231,7 +230,7 @@ const isDueToday = (dueAt?: string | null) => {
 }
 
 export async function syncClickUp(connection: ClickUpConnection) {
-  const { token, listIds, teamId, teamName, equipeFieldId, equipeValue, equipeOptionId } = connection
+  const { token, listIds, teamId, teamName, customFieldId, customFieldValue, customFieldOptionId } = connection
   const tasks: ClickUpTask[] = []
   const errors: string[] = []
   const statusCounts = new Map<string, number>()
@@ -247,7 +246,7 @@ export async function syncClickUp(connection: ClickUpConnection) {
     }
   }
 
-  const customFields = buildCustomFieldFilter(equipeFieldId, equipeOptionId)
+  const customFields = buildCustomFieldFilter(customFieldId, customFieldOptionId)
 
   if (resolvedTeamId) {
     try {
@@ -314,7 +313,7 @@ export async function syncClickUp(connection: ClickUpConnection) {
       status: task.status?.status ?? null,
       assignees,
       updatedAt: task.date_updated,
-      equipe: equipeValue ?? null
+      customField: customFieldValue ?? null
     }
 
     db.insert(externalItems)

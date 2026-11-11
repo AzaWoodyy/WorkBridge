@@ -19,7 +19,7 @@ declare global {
       listGitLabGroups: () => Promise<{ ok: boolean; groups: string[] }>
       listGitLabMembers: (projectId: number) => Promise<{ ok: boolean; members: Array<{ id: number; username: string; name?: string | null }> }>
       listClickUpLists: () => Promise<{ ok: boolean; lists: Array<{ id: string; label: string }> }>
-      listClickUpEquipeOptions: (listId: string) => Promise<{ ok: boolean; options: { fieldId: string | null; options: Array<{ id: string; name: string }> } }>
+      listClickUpCustomFieldOptions: (listId: string, field: string) => Promise<{ ok: boolean; options: { fieldId: string | null; options: Array<{ id: string; name: string }> } }>
       listRocketChatRooms: () => Promise<{ ok: boolean; rooms: string[] }>
       getSyncStatus: () => Promise<unknown[]>
       getSyncCadence: () => Promise<{ minutes: number }>

@@ -25,7 +25,7 @@ import {
   updateGitLabMrAssigneesReviewers,
   updateGitLabMrLabels
 } from './integrations/gitlab'
-import { addClickUpTaskComment, listClickUpEquipeOptions, listClickUpLists } from './integrations/clickup'
+import { addClickUpTaskComment, listClickUpCustomFieldOptions, listClickUpLists } from './integrations/clickup'
 import { listRocketChatRooms, postRocketChatThreadReply, reactRocketChatMessage } from './integrations/rocketchat'
 
 const SERVICE_NAME = 'WorkBridge'
@@ -265,13 +265,13 @@ export function registerIpc() {
     }
   })
 
-  ipcMain.handle('workbridge:list-clickup-equipe-options', async (_event, listId: string) => {
+  ipcMain.handle('workbridge:list-clickup-custom-field-options', async (_event, listId: string, field: string) => {
     try {
       const { token } = await getClickUpAuth()
-      const options = await listClickUpEquipeOptions(token, listId)
+      const options = await listClickUpCustomFieldOptions(token, listId, field)
       return { ok: true, options }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load equipe options.'
+      const message = error instanceof Error ? error.message : 'Failed to load customField options.'
       return { ok: false, message, options: { fieldId: null, options: [] } }
     }
   })
