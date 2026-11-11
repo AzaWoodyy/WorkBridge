@@ -1,5 +1,5 @@
-import { useEffect, type ReactNode } from 'react'
 import { useAppStore } from '@renderer/store/appStore'
+import { useEffect, type ReactNode } from 'react'
 
 const getSystemPrefersDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches
 

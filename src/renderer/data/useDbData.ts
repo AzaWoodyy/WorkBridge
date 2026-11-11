@@ -1,27 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  clickupAddComment,
+  confirmLink,
+  createLink,
+  fetchConnections,
   fetchItems,
   fetchLinks,
   fetchPlanner,
-  fetchConnections,
-  fetchSyncStatus,
   fetchSyncCadence,
-  updateSyncCadence,
+  fetchSyncStatus,
   flushAll,
   gitlabAddNote,
-  clickupAddComment,
-  rocketChatThreadReply,
-  rocketChatReact,
   gitlabApprove,
   gitlabUnapprove,
   gitlabUpdateLabels,
   gitlabUpdateReviewers,
-  createLink,
-  confirmLink,
+  rocketChatReact,
+  rocketChatThreadReply,
   saveConnection,
   storeToken,
   testConnection,
   triggerSync,
+  updateSyncCadence,
   upsertPlannerState
 } from './api'
 
@@ -60,7 +60,12 @@ export function useConnections() {
 }
 
 export function useSyncStatus() {
-  return useQuery({ queryKey: ['sync-status'], queryFn: fetchSyncStatus, refetchOnWindowFocus: false, refetchInterval: 30000 })
+  return useQuery({
+    queryKey: ['sync-status'],
+    queryFn: fetchSyncStatus,
+    refetchOnWindowFocus: false,
+    refetchInterval: 30000
+  })
 }
 
 export function useSyncCadence() {

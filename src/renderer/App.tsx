@@ -1,14 +1,14 @@
-import { useEffect } from 'react'
 import { CommandPalette } from '@renderer/components/CommandPalette'
 import { DetailDrawer } from '@renderer/components/layout/DetailDrawer'
 import { Sidebar } from '@renderer/components/layout/Sidebar'
 import { TopBar } from '@renderer/components/layout/TopBar'
+import { usePlannerMutation, useTriggerSyncMutation } from '@renderer/data/useDbData'
 import { Dashboard } from '@renderer/screens/Dashboard'
 import { Inbox } from '@renderer/screens/Inbox'
 import { Planner } from '@renderer/screens/Planner'
 import { Settings } from '@renderer/screens/Settings'
 import { useAppStore } from '@renderer/store/appStore'
-import { usePlannerMutation, useTriggerSyncMutation } from '@renderer/data/useDbData'
+import { useEffect } from 'react'
 
 export function App() {
   const activeView = useAppStore((state) => state.activeView)

@@ -1,6 +1,6 @@
 import * as Popover from '@radix-ui/react-popover'
-import { useMemo, useState } from 'react'
 import { cn } from '@renderer/lib/utils'
+import { useMemo, useState } from 'react'
 
 export type ComboboxOption = { value: string; label?: string }
 

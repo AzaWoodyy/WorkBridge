@@ -1,5 +1,5 @@
-import { cn } from '@renderer/lib/utils'
 import type { PlannerLane } from '@renderer/data/types'
+import { cn } from '@renderer/lib/utils'
 
 const laneLabels: Record<PlannerLane, string> = {
   inbox: 'Inbox',

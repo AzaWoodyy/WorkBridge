@@ -1,6 +1,6 @@
 import * as Popover from '@radix-ui/react-popover'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@renderer/lib/utils'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 export type UserOption = { value: string; label?: string }
 
@@ -48,7 +48,9 @@ export function UserMultiCombobox({
 
   const toggleUser = (value: string) => {
     const exists = normalizedSelected.includes(value)
-    const next = exists ? normalizedSelected.filter((entry) => entry !== value) : [...normalizedSelected, value]
+    const next = exists
+      ? normalizedSelected.filter((entry) => entry !== value)
+      : [...normalizedSelected, value]
     onChange(next)
   }
 
@@ -136,7 +138,12 @@ export function UserMultiCombobox({
               }
             }}
           />
-          <div ref={listRef} className="max-h-56 overflow-auto" onKeyDown={handleListKeyDown} tabIndex={0}>
+          <div
+            ref={listRef}
+            className="max-h-56 overflow-auto"
+            onKeyDown={handleListKeyDown}
+            tabIndex={0}
+          >
             {filtered.length === 0 ? (
               <div className="px-2 py-2 text-xs text-muted-foreground">No matches</div>
             ) : (
@@ -158,7 +165,12 @@ export function UserMultiCombobox({
                     <span className="block min-w-0 truncate" title={label}>
                       {label}
                     </span>
-                    <span className={cn('text-xs', isSelected ? 'text-emerald-500' : 'text-muted-foreground')}>
+                    <span
+                      className={cn(
+                        'text-xs',
+                        isSelected ? 'text-emerald-500' : 'text-muted-foreground'
+                      )}
+                    >
                       {isSelected ? '✓' : ''}
                     </span>
                   </button>

@@ -1,6 +1,6 @@
+import { and, eq, or } from 'drizzle-orm'
 import { db } from '../db/db'
 import { externalItems, links, plannerState, syncConnections } from '../db/schema'
-import { and, eq, or } from 'drizzle-orm'
 import { notifyOnce } from '../notifications'
 
 export type RocketChatConnection = {
@@ -25,10 +25,7 @@ type RocketChatMessage = {
   ts?: string
   _updatedAt?: string
   u?: { _id: string; username?: string }
-  reactions?: Record<
-    string,
-    { usernames?: string[]; names?: string[]; count?: number }
-  >
+  reactions?: Record<string, { usernames?: string[]; names?: string[]; count?: number }>
 }
 
 const reviewKeywords = [
@@ -43,7 +40,12 @@ const reviewKeywords = [
 
 const mrUrlRegex = /(https?:\/\/[^\s)]+\/(?:-\/)?merge_requests\/\d+)/gi
 
-async function rocketFetch<T>(baseUrl: string, token: string, userId: string, path: string): Promise<T> {
+async function rocketFetch<T>(
+  baseUrl: string,
+  token: string,
+  userId: string,
+  path: string
+): Promise<T> {
   const response = await fetch(`${baseUrl}${path}`, {
     headers: {
       'X-Auth-Token': token,
@@ -93,8 +95,17 @@ const normalizeRoomName = (value: string) =>
     .toLowerCase()
     .trim()
 
-async function fetchJoinedRooms(baseUrl: string, token: string, userId: string): Promise<RocketChatRoom[]> {
-  const response = await rocketFetch<{ update: RocketChatRoom[] }>(baseUrl, token, userId, '/api/v1/rooms.get')
+async function fetchJoinedRooms(
+  baseUrl: string,
+  token: string,
+  userId: string
+): Promise<RocketChatRoom[]> {
+  const response = await rocketFetch<{ update: RocketChatRoom[] }>(
+    baseUrl,
+    token,
+    userId,
+    '/api/v1/rooms.get'
+  )
   return response.update ?? []
 }
 
@@ -193,7 +204,13 @@ async function fetchRoomHistory(
   latest: string
 ) {
   const endpoint =
-    room.t === 'c' ? 'channels.history' : room.t === 'p' ? 'groups.history' : room.t === 'd' ? 'dm.history' : null
+    room.t === 'c'
+      ? 'channels.history'
+      : room.t === 'p'
+        ? 'groups.history'
+        : room.t === 'd'
+          ? 'dm.history'
+          : null
   if (!endpoint) return []
 
   const messages: RocketChatMessage[] = []
@@ -380,11 +397,17 @@ export async function postRocketChatThreadReply(
   threadId: string,
   text: string
 ) {
-  await rocketPost<{ message: { _id: string } }>(baseUrl, token, userId, '/api/v1/chat.postMessage', {
-    roomId,
-    text,
-    tmid: threadId
-  })
+  await rocketPost<{ message: { _id: string } }>(
+    baseUrl,
+    token,
+    userId,
+    '/api/v1/chat.postMessage',
+    {
+      roomId,
+      text,
+      tmid: threadId
+    }
+  )
 }
 
 export async function reactRocketChatMessage(

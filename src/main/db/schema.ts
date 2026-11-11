@@ -1,4 +1,5 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { sql } from 'drizzle-orm'
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export const externalItems = sqliteTable('external_items', {
   id: text('id').primaryKey(),
@@ -55,4 +56,16 @@ export const syncCursors = sqliteTable('sync_cursors', {
   scopeKey: text('scope_key').notNull(),
   cursorValue: text('cursor_value').notNull(),
   updatedAt: text('updated_at').notNull()
+})
+
+export const syncAuditLog = sqliteTable('sync_audit_log', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  eventType: text('event_type').notNull(),
+  tableName: text('table_name').notNull(),
+  rowId: text('row_id').notNull(),
+  source: text('source'),
+  payloadJson: text('payload_json'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
 })

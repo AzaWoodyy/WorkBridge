@@ -1,16 +1,17 @@
+import { and, eq, or } from 'drizzle-orm'
 import { db } from '../db/db'
 import { externalItems, links, plannerState, syncConnections } from '../db/schema'
-import { and, eq, or } from 'drizzle-orm'
 import { notifyOnce } from '../notifications'
+import { extractClickUpIds } from './normalize'
 
 export type ClickUpConnection = {
   token: string
   listIds: string[]
   teamId?: string | null
   teamName?: string | null
-  equipeFieldId?: string | null
-  equipeValue?: string | null
-  equipeOptionId?: string | null
+  customFieldId?: string | null
+  customFieldValue?: string | null
+  customFieldOptionId?: string | null
 }
 
 type ClickUpUser = {
@@ -94,7 +95,10 @@ export async function listClickUpLists(token: string) {
           `/folder/${folder.id}/list?archived=false`
         )
         for (const list of folderLists.lists ?? []) {
-          results.push({ id: list.id, label: `${team.name} / ${space.name} / ${folder.name} / ${list.name}` })
+          results.push({
+            id: list.id,
+            label: `${team.name} / ${space.name} / ${folder.name} / ${list.name}`
+          })
         }
       }
     }
@@ -103,18 +107,21 @@ export async function listClickUpLists(token: string) {
   return results
 }
 
-export async function listClickUpEquipeOptions(token: string, listId: string) {
-  const data = await clickupFetch<{ fields: ClickUpTask['custom_fields'] }>(token, `/list/${listId}/field`)
+export async function listClickUpCustomFieldOptions(token: string, listId: string, field: string) {
+  const data = await clickupFetch<{ fields: ClickUpTask['custom_fields'] }>(
+    token,
+    `/list/${listId}/field`
+  )
   const fields = data.fields ?? []
-  const equipeField =
-    fields.find((field) => field.name?.toLowerCase() === 'equipe') ??
-    fields.find((field) => field.type === 'drop_down')
-  if (!equipeField || !equipeField.type_config?.options) {
-    return { fieldId: equipeField?.id ?? null, options: [] }
+  const customFieldField = fields.find(
+    (entry) => entry.id === field || entry.name?.toLowerCase() === field.toLowerCase()
+  )
+  if (!customFieldField || !customFieldField.type_config?.options) {
+    return { fieldId: customFieldField?.id ?? null, options: [] }
   }
   return {
-    fieldId: equipeField.id,
-    options: equipeField.type_config.options.map((option) => ({
+    fieldId: customFieldField.id,
+    options: customFieldField.type_config.options.map((option) => ({
       id: option.id,
       name: option.name
     }))
@@ -171,7 +178,12 @@ async function fetchTasksForList(token: string, listId: string, customFields?: s
   return tasks
 }
 
-async function fetchTasksForTeam(token: string, teamId: string, listIds: string[], customFields?: string | null) {
+async function fetchTasksForTeam(
+  token: string,
+  teamId: string,
+  listIds: string[],
+  customFields?: string | null
+) {
   const tasks: ClickUpTask[] = []
   let page = 0
 
@@ -194,7 +206,7 @@ async function fetchTasksForTeam(token: string, teamId: string, listIds: string[
 const normalizeStatus = (value: string) =>
   value
     .normalize('NFD')
-    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
 
@@ -203,7 +215,7 @@ const allowedStatuses = new Set(CLICKUP_STATUS_FILTERS.map((status) => normalize
 const normalizeName = (value: string) =>
   value
     .normalize('NFD')
-    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
 
@@ -231,23 +243,21 @@ const isDueToday = (dueAt?: string | null) => {
 }
 
 export async function syncClickUp(connection: ClickUpConnection) {
-  const { token, listIds, teamId, teamName, equipeFieldId, equipeValue, equipeOptionId } = connection
+  const { token, listIds, teamId, teamName, customFieldId, customFieldValue, customFieldOptionId } =
+    connection
   const tasks: ClickUpTask[] = []
   const errors: string[] = []
   const statusCounts = new Map<string, number>()
 
   let resolvedTeamId = teamId ?? null
-  let resolvedTeamName = teamName ?? null
   if (!resolvedTeamId && teamName) {
     resolvedTeamId = await resolveTeamId(token, teamName)
     if (!resolvedTeamId) {
-      errors.push(`Team name \"${teamName}\" not found.`)
-    } else {
-      resolvedTeamName = teamName
+      errors.push(`Team name "${teamName}" not found.`)
     }
   }
 
-  const customFields = buildCustomFieldFilter(equipeFieldId, equipeOptionId)
+  const customFields = buildCustomFieldFilter(customFieldId, customFieldOptionId)
 
   if (resolvedTeamId) {
     try {
@@ -287,7 +297,8 @@ export async function syncClickUp(connection: ClickUpConnection) {
       ? true
       : listIds.length
         ? listIds.some(
-            (id) => id === task.list?.id || (Array.isArray(task.list_ids) && task.list_ids.includes(id))
+            (id) =>
+              id === task.list?.id || (Array.isArray(task.list_ids) && task.list_ids.includes(id))
           )
         : true
 
@@ -314,7 +325,7 @@ export async function syncClickUp(connection: ClickUpConnection) {
       status: task.status?.status ?? null,
       assignees,
       updatedAt: task.date_updated,
-      equipe: equipeValue ?? null
+      customField: customFieldValue ?? null
     }
 
     db.insert(externalItems)
@@ -417,21 +428,6 @@ export async function addClickUpTaskComment(token: string, taskId: string, comme
   })
 }
 
-function extractClickUpIds(text: string): string[] {
-  const ids = new Set<string>()
-  const urlRegex = /https?:\/\/app\.clickup\.com\/t\/([a-z0-9]+)/gi
-  const idRegex = /\bCU-([a-z0-9]+)\b/gi
-
-  let match
-  while ((match = urlRegex.exec(text))) {
-    ids.add(match[1])
-  }
-  while ((match = idRegex.exec(text))) {
-    ids.add(match[1])
-  }
-  return Array.from(ids)
-}
-
 function suggestLinksFromGitLab() {
   const clickupItems = db
     .select()
@@ -448,7 +444,7 @@ function suggestLinksFromGitLab() {
 
   for (const mr of gitlabItems) {
     const meta = mr.rawJson ? JSON.parse(mr.rawJson) : {}
-    const haystack = `${mr.title}\\n${mr.bodySnippet ?? ''}\\n${meta.sourceBranch ?? ''}`
+    const haystack = `${mr.title}\n${mr.bodySnippet ?? ''}\n${meta.sourceBranch ?? ''}`
     const ids = extractClickUpIds(haystack)
     for (const id of ids) {
       const targetId = idToItem.get(id)

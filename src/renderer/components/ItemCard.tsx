@@ -1,11 +1,11 @@
+import { PlanningChip } from '@renderer/components/PlanningChip'
 import { SourceBadge } from '@renderer/components/SourceBadge'
 import { StatusChip } from '@renderer/components/StatusChip'
-import { PlanningChip } from '@renderer/components/PlanningChip'
-import { cn } from '@renderer/lib/utils'
 import type { PlannerLane, WorkItem } from '@renderer/data/types'
+import { cn } from '@renderer/lib/utils'
 import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import remarkEmoji from 'remark-emoji'
+import remarkGfm from 'remark-gfm'
 
 export function ItemCard({
   item,
@@ -52,7 +52,10 @@ export function ItemCard({
             ) : null}
             {lane ? <PlanningChip lane={lane} /> : null}
           </div>
-          <h3 className="text-base font-semibold leading-snug text-foreground line-clamp-2" title={item.title}>
+          <h3
+            className="text-base font-semibold leading-snug text-foreground line-clamp-2"
+            title={item.title}
+          >
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkEmoji]}
               components={{
@@ -75,7 +78,9 @@ export function ItemCard({
             </ReactMarkdown>
           </h3>
         </div>
-        <div className="text-xs text-muted-foreground shrink-0">{item.needsReview ? 'Review request' : 'Active work'}</div>
+        <div className="text-xs text-muted-foreground shrink-0">
+          {item.needsReview ? 'Review request' : 'Active work'}
+        </div>
       </div>
       <div className="markdown line-clamp-5 text-sm text-muted-foreground break-words">
         <ReactMarkdown
@@ -99,11 +104,21 @@ export function ItemCard({
         </ReactMarkdown>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-        <span className="min-w-0 truncate" title={item.projectOrRoom}>{item.projectOrRoom}</span>
+        <span className="min-w-0 truncate" title={item.projectOrRoom}>
+          {item.projectOrRoom}
+        </span>
         <div className="flex flex-wrap items-center gap-3">
           {typeof linkedCount === 'number' ? <span>{linkedCount} linked</span> : null}
           {dueText ? (
-            <span className={isOverdue ? 'text-rose-600 dark:text-rose-300' : isDueToday ? 'text-amber-600 dark:text-amber-300' : ''}>
+            <span
+              className={
+                isOverdue
+                  ? 'text-rose-600 dark:text-rose-300'
+                  : isDueToday
+                    ? 'text-amber-600 dark:text-amber-300'
+                    : ''
+              }
+            >
               {isOverdue ? 'Overdue' : isDueToday ? 'Due today' : `Due ${dueText}`}
             </span>
           ) : null}

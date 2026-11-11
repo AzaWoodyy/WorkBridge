@@ -1,11 +1,11 @@
+import { Dialog, DialogContent, DialogTitle } from '@renderer/components/ui/dialog'
+import { useItems, usePlannerMutation, useTriggerSyncMutation } from '@renderer/data/useDbData'
+import { cn } from '@renderer/lib/utils'
+import { useAppStore } from '@renderer/store/appStore'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import remarkEmoji from 'remark-emoji'
-import { Dialog, DialogContent } from '@renderer/components/ui/dialog'
-import { useItems, usePlannerMutation, useTriggerSyncMutation } from '@renderer/data/useDbData'
-import { useAppStore } from '@renderer/store/appStore'
-import { cn } from '@renderer/lib/utils'
+import remarkGfm from 'remark-gfm'
 
 type CommandAction = {
   id: string
@@ -182,6 +182,7 @@ export function CommandPalette() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-xl p-0">
+        <DialogTitle className="sr-only">Search and commands</DialogTitle>
         <div className="border-b border-border/60 bg-card/70 px-5 py-4">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Command palette
@@ -208,7 +209,9 @@ export function CommandPalette() {
                   </div>
                   <div className="mt-2 space-y-1">
                     {filteredActions.map((action) => {
-                      const index = entries.findIndex((entry) => entry.type === 'action' && entry.action.id === action.id)
+                      const index = entries.findIndex(
+                        (entry) => entry.type === 'action' && entry.action.id === action.id
+                      )
                       return (
                         <button
                           key={action.id}
@@ -226,7 +229,9 @@ export function CommandPalette() {
                             ) : null}
                           </div>
                           {action.shortcut ? (
-                            <div className="text-[11px] text-muted-foreground">{action.shortcut}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {action.shortcut}
+                            </div>
                           ) : null}
                         </button>
                       )
@@ -242,7 +247,9 @@ export function CommandPalette() {
                   </div>
                   <div className="mt-2 space-y-1">
                     {filteredItems.map((item) => {
-                      const index = entries.findIndex((entry) => entry.type === 'item' && entry.item.id === item.id)
+                      const index = entries.findIndex(
+                        (entry) => entry.type === 'item' && entry.item.id === item.id
+                      )
                       return (
                         <button
                           key={item.id}
@@ -256,7 +263,10 @@ export function CommandPalette() {
                           )}
                         >
                           <div className="min-w-0">
-                            <div className="font-medium text-foreground line-clamp-2" title={item.title}>
+                            <div
+                              className="font-medium text-foreground line-clamp-2"
+                              title={item.title}
+                            >
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm, remarkEmoji]}
                                 components={{
@@ -278,11 +288,16 @@ export function CommandPalette() {
                                 {item.title.replace(/\s*\n\s*/g, ' ')}
                               </ReactMarkdown>
                             </div>
-                            <div className="text-xs text-muted-foreground truncate" title={item.projectOrRoom}>
+                            <div
+                              className="text-xs text-muted-foreground truncate"
+                              title={item.projectOrRoom}
+                            >
                               {item.projectOrRoom}
                             </div>
                           </div>
-                          <div className="text-[11px] text-muted-foreground shrink-0">{item.source}</div>
+                          <div className="text-[11px] text-muted-foreground shrink-0">
+                            {item.source}
+                          </div>
                         </button>
                       )
                     })}

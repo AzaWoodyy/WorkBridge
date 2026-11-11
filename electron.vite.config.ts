@@ -1,5 +1,5 @@
-import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+import { defineConfig } from 'electron-vite'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -7,10 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   main: {
-    entry: 'src/main/index.ts',
     build: {
       outDir: 'dist/main',
       rollupOptions: {
+        input: path.resolve(__dirname, 'src/main/index.ts'),
         external: ['better-sqlite3', 'keytar'],
         output: {
           format: 'cjs'
@@ -19,12 +19,10 @@ export default defineConfig({
     }
   },
   preload: {
-    input: {
-      index: path.resolve(__dirname, 'src/preload/index.ts')
-    },
     build: {
       outDir: 'dist/preload',
       rollupOptions: {
+        input: path.resolve(__dirname, 'src/preload/index.ts'),
         output: {
           format: 'cjs'
         }

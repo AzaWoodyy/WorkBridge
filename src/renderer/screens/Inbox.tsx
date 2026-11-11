@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
-import { ItemCard } from '@renderer/components/ItemCard'
 import { EmptyState } from '@renderer/components/EmptyState'
+import { ItemCard } from '@renderer/components/ItemCard'
 import { LoadingSkeleton } from '@renderer/components/LoadingSkeleton'
-import { useItems, useLinks, usePlanner } from '@renderer/data/useDbData'
-import { useAppStore } from '@renderer/store/appStore'
 import { Button } from '@renderer/components/ui/button'
+import { useItems, useLinks, usePlanner } from '@renderer/data/useDbData'
 import { cn } from '@renderer/lib/utils'
+import { useAppStore } from '@renderer/store/appStore'
+import { useMemo, useState } from 'react'
 
 export function Inbox() {
   const { data: items, isLoading } = useItems()
@@ -19,7 +19,8 @@ export function Inbox() {
     .filter(Boolean)
   const reviewItems = inboxItems?.filter((item) => item?.needsReview) ?? []
 
-  const getLinkedCount = (id: string) => links?.filter((link) => link.fromItemId === id || link.toItemId === id).length ?? 0
+  const getLinkedCount = (id: string) =>
+    links?.filter((link) => link.fromItemId === id || link.toItemId === id).length ?? 0
 
   const [filters, setFilters] = useState({
     needsReview: false,
@@ -61,7 +62,9 @@ export function Inbox() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold">Unified inbox</h2>
-          <p className="text-sm text-muted-foreground">Sort incoming work from GitLab, ClickUp, and Rocket.Chat.</p>
+          <p className="text-sm text-muted-foreground">
+            Sort incoming work from GitLab, ClickUp, and Rocket.Chat.
+          </p>
         </div>
         <div className="text-xs text-muted-foreground">{filteredItems.length} items</div>
       </div>
@@ -120,7 +123,9 @@ export function Inbox() {
         <div className="rounded-xl border border-border/60 bg-muted/30 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Review queue</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Review queue
+              </div>
               <div className="mt-2 text-lg font-semibold">{reviewItems.length} review requests</div>
             </div>
             <Button
@@ -167,7 +172,10 @@ export function Inbox() {
           ))}
         </div>
       ) : (
-        <EmptyState title="Inbox cleared" description="No items are waiting for triage right now." />
+        <EmptyState
+          title="Inbox cleared"
+          description="No items are waiting for triage right now."
+        />
       )}
     </div>
   )

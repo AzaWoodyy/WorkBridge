@@ -1,7 +1,8 @@
+import { and, eq, or } from 'drizzle-orm'
 import { db } from '../db/db'
-import { externalItems, plannerState, links } from '../db/schema'
-import { eq, and, or } from 'drizzle-orm'
+import { externalItems, links, plannerState } from '../db/schema'
 import { notifyOnce } from '../notifications'
+import { extractClickUpIds, normalizeMergeRequest } from './normalize'
 
 export type GitLabScope = {
   projects?: string[]
@@ -18,7 +19,6 @@ type GitLabUser = {
   name: string
   username: string
 }
-
 
 type GitLabMergeRequest = {
   id: number
@@ -57,7 +57,11 @@ const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/$/, '')
 
 const apiUrl = (baseUrl: string, path: string) => `${normalizeBaseUrl(baseUrl)}/api/v4${path}`
 
-async function gitlabFetch<T>(baseUrl: string, token: string, path: string): Promise<{ data: T; headers: Headers }> {
+async function gitlabFetch<T>(
+  baseUrl: string,
+  token: string,
+  path: string
+): Promise<{ data: T; headers: Headers }> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 15000)
 
@@ -98,7 +102,11 @@ export async function listGitLabGroups(baseUrl: string, token: string) {
 }
 
 export async function listGitLabMembers(baseUrl: string, token: string, projectId: number) {
-  const members = await fetchPaginated<GitLabMember>(baseUrl, token, `/projects/${projectId}/members/all?`)
+  const members = await fetchPaginated<GitLabMember>(
+    baseUrl,
+    token,
+    `/projects/${projectId}/members/all?`
+  )
   return members
     .map((member) => ({
       id: member.id,
@@ -112,7 +120,7 @@ async function gitlabRequest<T>(
   baseUrl: string,
   token: string,
   path: string,
-  options: { method: 'POST' | 'PUT'; params?: Record<string, any> } 
+  options: { method: 'POST' | 'PUT'; params?: Record<string, any> }
 ): Promise<T> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 15000)
@@ -147,7 +155,11 @@ async function gitlabRequest<T>(
   return (await response.json()) as T
 }
 
-async function resolveUserId(baseUrl: string, token: string, username: string): Promise<number | null> {
+async function resolveUserId(
+  baseUrl: string,
+  token: string,
+  username: string
+): Promise<number | null> {
   try {
     const { data } = await gitlabFetch<any[]>(
       baseUrl,
@@ -175,7 +187,11 @@ async function fetchPaginated<T>(baseUrl: string, token: string, path: string): 
   let page = 1
 
   while (true) {
-    const { data, headers } = await gitlabFetch<T[]>(baseUrl, token, `${path}&per_page=50&page=${page}`)
+    const { data, headers } = await gitlabFetch<T[]>(
+      baseUrl,
+      token,
+      `${path}&per_page=50&page=${page}`
+    )
     results.push(...data)
     const nextPage = headers.get('x-next-page')
     if (!nextPage) break
@@ -186,8 +202,12 @@ async function fetchPaginated<T>(baseUrl: string, token: string, path: string): 
   return results
 }
 
-
-async function fetchApprovals(baseUrl: string, token: string, projectId: number, iid: number): Promise<ApprovalSummary | null> {
+async function fetchApprovals(
+  baseUrl: string,
+  token: string,
+  projectId: number,
+  iid: number
+): Promise<ApprovalSummary | null> {
   try {
     const { data } = await gitlabFetch<any>(
       baseUrl,
@@ -196,12 +216,15 @@ async function fetchApprovals(baseUrl: string, token: string, projectId: number,
     )
 
     const approvedBy = Array.isArray(data.approved_by)
-      ? data.approved_by.map((entry: any) => entry?.user?.name ?? entry?.user?.username).filter(Boolean)
+      ? data.approved_by
+          .map((entry: any) => entry?.user?.name ?? entry?.user?.username)
+          .filter(Boolean)
       : []
 
     return {
       approved: Boolean(data.approved),
-      approvalsRequired: typeof data.approvals_required === 'number' ? data.approvals_required : null,
+      approvalsRequired:
+        typeof data.approvals_required === 'number' ? data.approvals_required : null,
       approvalsLeft: typeof data.approvals_left === 'number' ? data.approvals_left : null,
       approvedBy
     }
@@ -210,7 +233,13 @@ async function fetchApprovals(baseUrl: string, token: string, projectId: number,
   }
 }
 
-async function fetchPipelineStatus(baseUrl: string, token: string, projectId: number, iid: number, fallback?: string) {
+async function fetchPipelineStatus(
+  baseUrl: string,
+  token: string,
+  projectId: number,
+  iid: number,
+  fallback?: string
+) {
   if (fallback) return fallback
   try {
     const { data } = await gitlabFetch<any[]>(
@@ -234,7 +263,11 @@ const hasLinks = (itemId: string) => {
   return Boolean(link)
 }
 
-async function withConcurrency<T, R>(items: T[], limit: number, worker: (item: T) => Promise<R>): Promise<R[]> {
+async function withConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<R>
+): Promise<R[]> {
   const results: R[] = []
   let index = 0
 
@@ -254,14 +287,20 @@ export async function testGitLabConnection(baseUrl: string, token: string) {
   return data
 }
 
-export async function syncGitLab(connection: GitLabConnection & { updatedAfter?: string | null; createdAfter?: string | null }) {
+export async function syncGitLab(
+  connection: GitLabConnection & { updatedAfter?: string | null; createdAfter?: string | null }
+) {
   const { baseUrl, token, scope } = connection
   const projectIds = scope.projects ?? []
   const groupIds = scope.groups ?? []
   const mrLists: GitLabMergeRequest[] = []
   const errors: string[] = []
-  const updatedAfter = connection.updatedAfter ? `&updated_after=${encodeURIComponent(connection.updatedAfter)}` : ''
-  const createdAfter = connection.createdAfter ? `&created_after=${encodeURIComponent(connection.createdAfter)}` : ''
+  const updatedAfter = connection.updatedAfter
+    ? `&updated_after=${encodeURIComponent(connection.updatedAfter)}`
+    : ''
+  const createdAfter = connection.createdAfter
+    ? `&created_after=${encodeURIComponent(connection.createdAfter)}`
+    : ''
 
   for (const project of projectIds) {
     const encoded = encodeURIComponent(project)
@@ -300,9 +339,7 @@ export async function syncGitLab(connection: GitLabConnection & { updatedAfter?:
     const key = `${mr.project_id}-${mr.iid}`
     if (seen.has(key)) return
     seen.add(key)
-    const isDraft = Boolean(mr.draft ?? mr.work_in_progress ?? mr.title?.startsWith('Draft:'))
-    const reviewers = mr.reviewers?.map((user) => user.name ?? user.username).filter(Boolean) ?? []
-    const assignees = mr.assignees?.map((user) => user.name ?? user.username).filter(Boolean) ?? []
+    const { isDraft, reviewers, assignees } = normalizeMergeRequest(mr)
 
     const [approvals, pipelineStatus] = await Promise.all([
       fetchApprovals(baseUrl, token, mr.project_id, mr.iid),
@@ -379,28 +416,13 @@ export async function syncGitLab(connection: GitLabConnection & { updatedAfter?:
       .onConflictDoNothing()
       .run()
 
-    const haystack = `${mr.title}\\n${mr.description ?? ''}\\n${mr.source_branch ?? ''}`
+    const haystack = `${mr.title}\n${mr.description ?? ''}\n${mr.source_branch ?? ''}`
     suggestLinksForMr(itemId, haystack)
   })
 
   // Keep local GitLab items/planner state stable across transient API gaps.
   // We only upsert what we see; we do not hard-delete unseen rows during polling.
   return { synced: mrLists.length, errors }
-}
-
-function extractClickUpIds(text: string): string[] {
-  const ids = new Set<string>()
-  const urlRegex = /https?:\/\/app\.clickup\.com\/t\/([a-z0-9]+)/gi
-  const idRegex = /\bCU-([a-z0-9]+)\b/gi
-
-  let match
-  while ((match = urlRegex.exec(text))) {
-    ids.add(match[1])
-  }
-  while ((match = idRegex.exec(text))) {
-    ids.add(match[1])
-  }
-  return Array.from(ids)
 }
 
 function suggestLinksForMr(mrItemId: string, text: string) {
@@ -503,14 +525,26 @@ function resolveStableGitLabItemId(externalId: string, canonicalId: string) {
   return winner.row.id
 }
 
-export async function addGitLabMrNote(baseUrl: string, token: string, projectId: number, iid: number, body: string) {
+export async function addGitLabMrNote(
+  baseUrl: string,
+  token: string,
+  projectId: number,
+  iid: number,
+  body: string
+) {
   return gitlabRequest(baseUrl, token, `/projects/${projectId}/merge_requests/${iid}/notes`, {
     method: 'POST',
     params: { body }
   })
 }
 
-export async function updateGitLabMrLabels(baseUrl: string, token: string, projectId: number, iid: number, labels: string[]) {
+export async function updateGitLabMrLabels(
+  baseUrl: string,
+  token: string,
+  projectId: number,
+  iid: number,
+  labels: string[]
+) {
   return gitlabRequest(baseUrl, token, `/projects/${projectId}/merge_requests/${iid}`, {
     method: 'PUT',
     params: { labels: labels.join(',') }
@@ -537,13 +571,23 @@ export async function updateGitLabMrAssigneesReviewers(
   })
 }
 
-export async function approveGitLabMr(baseUrl: string, token: string, projectId: number, iid: number) {
+export async function approveGitLabMr(
+  baseUrl: string,
+  token: string,
+  projectId: number,
+  iid: number
+) {
   return gitlabRequest(baseUrl, token, `/projects/${projectId}/merge_requests/${iid}/approve`, {
     method: 'POST'
   })
 }
 
-export async function unapproveGitLabMr(baseUrl: string, token: string, projectId: number, iid: number) {
+export async function unapproveGitLabMr(
+  baseUrl: string,
+  token: string,
+  projectId: number,
+  iid: number
+) {
   return gitlabRequest(baseUrl, token, `/projects/${projectId}/merge_requests/${iid}/unapprove`, {
     method: 'POST'
   })

@@ -1,7 +1,7 @@
+import { and, eq } from 'drizzle-orm'
 import { Notification } from 'electron'
 import { db } from './db/db'
 import { syncCursors } from './db/schema'
-import { and, eq } from 'drizzle-orm'
 
 const SOURCE = 'notify'
 

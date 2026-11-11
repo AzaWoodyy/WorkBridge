@@ -1,6 +1,31 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@plugin 'tailwindcss-animate';
+@custom-variant dark (&:where(.dark, .dark *));
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --shadow-soft: 0 1px 1px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.08);
+}
 
 :root {
   --background: 210 30% 98%;
@@ -114,7 +139,13 @@
 
 body {
   @apply bg-background text-foreground antialiased;
-  font-family: "SF Pro Text", "SF Pro Display", "Inter", system-ui, -apple-system, sans-serif;
+  font-family:
+    'SF Pro Text',
+    'SF Pro Display',
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
   letter-spacing: -0.01em;
   overflow: hidden;
 }
@@ -156,13 +187,13 @@ body {
 }
 
 .glass {
-  background: linear-gradient(135deg, rgba(255,255,255,0.75), rgba(255,255,255,0.4));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
   backdrop-filter: blur(18px);
 }
 
 .dark .glass,
 .oled .glass {
-  background: linear-gradient(135deg, rgba(20,24,32,0.82), rgba(20,24,32,0.55));
+  background: linear-gradient(135deg, rgba(20, 24, 32, 0.82), rgba(20, 24, 32, 0.55));
 }
 
 .markdown h1,
@@ -216,4 +247,18 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.dark,
+.oled {
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
