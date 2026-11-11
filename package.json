@@ -14,10 +14,12 @@
     "postinstall": "electron-builder install-app-deps",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
-    "test:reliability": "node --test tests/gitlab-reliability.test.mjs",
+    "test:reliability": "vitest run tests/sync.test.ts",
     "demo": "WORKBRIDGE_DEMO=1 env -u ELECTRON_RUN_AS_NODE electron-vite dev",
     "format": "prettier --write src",
-    "format:check": "prettier --check src"
+    "format:check": "prettier --check src",
+    "test": "vitest run",
+    "test:prepare": "npm rebuild better-sqlite3"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",
@@ -60,7 +62,8 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.72.2",
-    "vite": "^5.4.2"
+    "vite": "^5.4.2",
+    "vitest": "^3.2.7"
   },
   "productName": "WorkBridge",
   "build": {

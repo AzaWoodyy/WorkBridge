@@ -1,3 +1,4 @@
+import { extractClickUpIds } from './normalize'
 import { db } from '../db/db'
 import { externalItems, links, plannerState, syncConnections } from '../db/schema'
 import { and, eq, or } from 'drizzle-orm'
@@ -425,21 +426,6 @@ export async function addClickUpTaskComment(token: string, taskId: string, comme
     comment_text: comment,
     notify_all: true
   })
-}
-
-function extractClickUpIds(text: string): string[] {
-  const ids = new Set<string>()
-  const urlRegex = /https?:\/\/app\.clickup\.com\/t\/([a-z0-9]+)/gi
-  const idRegex = /\bCU-([a-z0-9]+)\b/gi
-
-  let match
-  while ((match = urlRegex.exec(text))) {
-    ids.add(match[1])
-  }
-  while ((match = idRegex.exec(text))) {
-    ids.add(match[1])
-  }
-  return Array.from(ids)
 }
 
 function suggestLinksFromGitLab() {

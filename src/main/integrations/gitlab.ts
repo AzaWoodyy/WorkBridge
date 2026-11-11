@@ -1,3 +1,4 @@
+import { extractClickUpIds, normalizeMergeRequest } from './normalize'
 import { db } from '../db/db'
 import { externalItems, plannerState, links } from '../db/schema'
 import { eq, and, or } from 'drizzle-orm'
@@ -338,9 +339,7 @@ export async function syncGitLab(
     const key = `${mr.project_id}-${mr.iid}`
     if (seen.has(key)) return
     seen.add(key)
-    const isDraft = Boolean(mr.draft ?? mr.work_in_progress ?? mr.title?.startsWith('Draft:'))
-    const reviewers = mr.reviewers?.map((user) => user.name ?? user.username).filter(Boolean) ?? []
-    const assignees = mr.assignees?.map((user) => user.name ?? user.username).filter(Boolean) ?? []
+    const { isDraft, reviewers, assignees } = normalizeMergeRequest(mr)
 
     const [approvals, pipelineStatus] = await Promise.all([
       fetchApprovals(baseUrl, token, mr.project_id, mr.iid),
@@ -424,21 +423,6 @@ export async function syncGitLab(
   // Keep local GitLab items/planner state stable across transient API gaps.
   // We only upsert what we see; we do not hard-delete unseen rows during polling.
   return { synced: mrLists.length, errors }
-}
-
-function extractClickUpIds(text: string): string[] {
-  const ids = new Set<string>()
-  const urlRegex = /https?:\/\/app\.clickup\.com\/t\/([a-z0-9]+)/gi
-  const idRegex = /\bCU-([a-z0-9]+)\b/gi
-
-  let match
-  while ((match = urlRegex.exec(text))) {
-    ids.add(match[1])
-  }
-  while ((match = idRegex.exec(text))) {
-    ids.add(match[1])
-  }
-  return Array.from(ids)
 }
 
 function suggestLinksForMr(mrItemId: string, text: string) {
