@@ -15,7 +15,7 @@ import {
   useSyncCadenceMutation,
   useTestConnectionMutation
 } from '@renderer/data/useDbData'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { z } from 'zod'
 type TestState = { status: 'idle' | 'testing' | 'success' | 'error'; message?: string }
 
@@ -71,11 +71,18 @@ export function useSettingsController() {
     setState: (state: TestState) => void
   ) => {
     setState({ status: 'testing' })
-    const result = await testMutation.mutateAsync({ source, ...payload })
-    if (result.ok) {
-      setState({ status: 'success', message: 'Connection looks good.' })
-    } else {
-      setState({ status: 'error', message: result.message ?? 'Connection failed.' })
+    try {
+      const result = await testMutation.mutateAsync({ source, ...payload })
+      if (result.ok) {
+        setState({ status: 'success', message: 'Connection looks good.' })
+      } else {
+        setState({ status: 'error', message: result.message ?? 'Connection failed.' })
+      }
+    } catch {
+      setState({
+        status: 'error',
+        message: 'Connection test failed. Check the URL and credentials, then retry.'
+      })
     }
   }
 
@@ -106,7 +113,20 @@ export function useSettingsController() {
     }
   }
 
+  const fieldRequest = useRef(0)
+  const changeCustomField = (customFieldId: string) => {
+    fieldRequest.current += 1
+    setCustomFieldOptions([])
+    setClickup((prev) => ({
+      ...prev,
+      customFieldId,
+      customFieldOptionId: '',
+      customFieldValue: ''
+    }))
+  }
+
   const loadCustomFieldOptions = async () => {
+    const request = ++fieldRequest.current
     const listId = clickup.listIds
       .split(',')
       .map((entry: string) => entry.trim())
@@ -114,6 +134,7 @@ export function useSettingsController() {
     if (!listId) return
     try {
       const result = await fetchClickUpCustomFieldOptions(listId, clickup.customFieldId)
+      if (request !== fieldRequest.current) return
       if (result?.options?.options) {
         setCustomFieldOptions(result.options.options)
       }
@@ -124,7 +145,7 @@ export function useSettingsController() {
         }))
       }
     } catch {
-      setCustomFieldOptions([])
+      if (request === fieldRequest.current) setCustomFieldOptions([])
     }
   }
 
@@ -325,6 +346,7 @@ export function useSettingsController() {
     setRocketTest,
     runTest,
     loadCustomFieldOptions,
+    changeCustomField,
     saveConnection,
     gitlabError,
     setGitlabError,

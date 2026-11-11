@@ -28,6 +28,7 @@ export function Settings() {
     setRocketTest,
     runTest,
     loadCustomFieldOptions,
+    changeCustomField,
     saveConnection,
     gitlabError,
     setGitlabError,
@@ -86,6 +87,7 @@ export function Settings() {
             setClickupTest={setClickupTest}
             runTest={runTest}
             loadCustomFieldOptions={loadCustomFieldOptions}
+            changeCustomField={changeCustomField}
             saveConnection={saveConnection}
             clickupError={clickupError}
             setClickupError={setClickupError}

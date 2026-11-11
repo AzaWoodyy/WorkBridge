@@ -20,6 +20,7 @@ export function ClickUpSettings({
   setClickupTest,
   runTest,
   loadCustomFieldOptions,
+  changeCustomField,
   saveConnection,
   clickupError,
   setClickupError,
@@ -35,6 +36,7 @@ export function ClickUpSettings({
   | 'setClickupTest'
   | 'runTest'
   | 'loadCustomFieldOptions'
+  | 'changeCustomField'
   | 'saveConnection'
   | 'clickupError'
   | 'setClickupError'
@@ -110,9 +112,7 @@ export function ClickUpSettings({
           <input
             className="w-full rounded-lg border border-border bg-background px-3 py-2"
             value={clickup.customFieldId}
-            onChange={(event) =>
-              setClickup((prev) => ({ ...prev, customFieldId: event.target.value }))
-            }
+            onChange={(event) => changeCustomField(event.target.value)}
           />
         </label>
         <label className="space-y-1">
