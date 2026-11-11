@@ -3,7 +3,7 @@ const id = z.string().min(1).max(2048)
 const body = z.string().min(1).max(100000)
 const source = z.enum(['gitlab', 'clickup', 'rocketchat'])
 const mr = z.object({ projectId: z.number().int().positive(), iid: z.number().int().positive() })
-const schemas: Record<string, z.ZodTypeAny> = {
+const schemas: Record<string, z.ZodType<unknown[]>> = {
   'upsert-planner': z.tuple([
     z.object({
       itemId: id,

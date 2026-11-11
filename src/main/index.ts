@@ -72,7 +72,7 @@ app.whenReady().then(async () => {
   if (process.platform === 'darwin') {
     const image = nativeImage.createFromPath(iconPath)
     if (!image.isEmpty()) {
-      app.dock.setIcon(image)
+      app.dock?.setIcon(image)
     }
   }
   createWindow()
