@@ -2,12 +2,10 @@ import { credentials as keytar } from './credentials'
 import { isDemo } from './runtime'
 import { db } from './db/db'
 import { externalItems, plannerState, syncConnections, syncCursors } from './db/schema'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { syncGitLab } from './integrations/gitlab'
 import { syncClickUp } from './integrations/clickup'
 import { syncRocketChat } from './integrations/rocketchat'
-
-
 
 type SyncState = {
   source: string
@@ -46,8 +44,7 @@ const getPollMinutes = () => {
   const row = db
     .select()
     .from(syncCursors)
-    .where(eq(syncCursors.source, 'settings'))
-    .where(eq(syncCursors.scopeKey, 'pollMinutes'))
+    .where(and(eq(syncCursors.source, 'settings'), eq(syncCursors.scopeKey, 'pollMinutes')))
     .get()
   const value = Number(row?.cursorValue)
   return Number.isFinite(value) && value > 0 ? value : DEFAULT_POLL_MINUTES
@@ -56,8 +53,7 @@ const getPollMinutes = () => {
 export const setSyncCadence = (minutes: number) => {
   const safe = Math.max(1, Math.min(60, Math.floor(minutes)))
   db.delete(syncCursors)
-    .where(eq(syncCursors.source, 'settings'))
-    .where(eq(syncCursors.scopeKey, 'pollMinutes'))
+    .where(and(eq(syncCursors.source, 'settings'), eq(syncCursors.scopeKey, 'pollMinutes')))
     .run()
   db.insert(syncCursors)
     .values({
@@ -80,11 +76,14 @@ export const getSyncCadence = () => getPollMinutes()
 const scheduleSyncLoop = () => {
   if (isDemo) return
   const minutes = getPollMinutes()
-  pollInterval = setInterval(() => {
-    syncGitLabNow({ full: false, trigger: 'poll' })
-    syncClickUpNow()
-    syncRocketChatNow()
-  }, minutes * 60 * 1000)
+  pollInterval = setInterval(
+    () => {
+      syncGitLabNow({ full: false, trigger: 'poll' })
+      syncClickUpNow()
+      syncRocketChatNow()
+    },
+    minutes * 60 * 1000
+  )
 }
 
 const state: Record<string, SyncState> = {
@@ -116,7 +115,11 @@ export const resetSyncState = () => {
 }
 
 const getGitLabConfig = async (full: boolean) => {
-  const connection = db.select().from(syncConnections).where(eq(syncConnections.source, 'gitlab')).get()
+  const connection = db
+    .select()
+    .from(syncConnections)
+    .where(eq(syncConnections.source, 'gitlab'))
+    .get()
   if (!connection) return { config: null, error: null }
   if (!connection.enabled) return { config: null, error: null }
   if (!connection.baseUrl) return { config: null, error: 'Missing base URL.' }
@@ -153,71 +156,74 @@ export async function syncGitLabNow(options?: { full?: boolean; trigger?: GitLab
   }
 
   gitlabSyncInFlight = (async () => {
-  updateState('gitlab', { status: 'syncing', lastError: null })
-  try {
-    const hasItems = Boolean(
-      db.select().from(externalItems).where(eq(externalItems.source, 'gitlab')).get()
-    )
-    const forceFull = Boolean(options?.full) || !hasItems
-    const { config, error } = await getGitLabConfig(forceFull)
-    if (!config) {
-      if (error) {
-        updateState('gitlab', { status: 'error', lastError: error })
+    updateState('gitlab', { status: 'syncing', lastError: null })
+    try {
+      const hasItems = Boolean(
+        db.select().from(externalItems).where(eq(externalItems.source, 'gitlab')).get()
+      )
+      const forceFull = Boolean(options?.full) || !hasItems
+      const { config, error } = await getGitLabConfig(forceFull)
+      if (!config) {
+        if (error) {
+          updateState('gitlab', { status: 'error', lastError: error })
+          db.update(syncConnections)
+            .set({ lastError: error })
+            .where(eq(syncConnections.source, 'gitlab'))
+            .run()
+        } else {
+          updateState('gitlab', { status: 'idle' })
+        }
+        return
+      }
+      const result = await syncGitLab(config)
+      const finishedAt = new Date().toISOString()
+
+      if (result.errors.length === 0) {
+        // Advance cursor only on a clean sync to avoid skipping items after partial failures.
         db.update(syncConnections)
-          .set({ lastError: error })
+          .set({ lastSyncAt: finishedAt, lastError: null })
           .where(eq(syncConnections.source, 'gitlab'))
           .run()
+        updateState('gitlab', {
+          status: 'idle',
+          lastSyncAt: finishedAt,
+          lastError: null
+        })
       } else {
+        // Keep the previous cursor so a later retry can recover missing projects/MRs.
+        db.update(syncConnections)
+          .set({ lastError: result.errors[0] })
+          .where(eq(syncConnections.source, 'gitlab'))
+          .run()
+        updateState('gitlab', {
+          status: 'error',
+          lastError: result.errors[0]
+        })
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      updateState('gitlab', { status: 'error', lastError: message })
+      db.update(syncConnections)
+        .set({ lastError: message })
+        .where(eq(syncConnections.source, 'gitlab'))
+        .run()
+    } finally {
+      if (state.gitlab.status === 'syncing') {
         updateState('gitlab', { status: 'idle' })
       }
-      return
+      gitlabSyncInFlight = null
     }
-    const result = await syncGitLab(config)
-    const finishedAt = new Date().toISOString()
-
-    if (result.errors.length === 0) {
-      // Advance cursor only on a clean sync to avoid skipping items after partial failures.
-      db.update(syncConnections)
-        .set({ lastSyncAt: finishedAt, lastError: null })
-        .where(eq(syncConnections.source, 'gitlab'))
-        .run()
-      updateState('gitlab', {
-        status: 'idle',
-        lastSyncAt: finishedAt,
-        lastError: null
-      })
-    } else {
-      // Keep the previous cursor so a later retry can recover missing projects/MRs.
-      db.update(syncConnections)
-        .set({ lastError: result.errors[0] })
-        .where(eq(syncConnections.source, 'gitlab'))
-        .run()
-      updateState('gitlab', {
-        status: 'error',
-        lastError: result.errors[0]
-      })
-    }
-
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    updateState('gitlab', { status: 'error', lastError: message })
-    db.update(syncConnections)
-      .set({ lastError: message })
-      .where(eq(syncConnections.source, 'gitlab'))
-      .run()
-  } finally {
-    if (state.gitlab.status === 'syncing') {
-      updateState('gitlab', { status: 'idle' })
-    }
-    gitlabSyncInFlight = null
-  }
   })()
 
   return gitlabSyncInFlight
 }
 
 const getClickUpConfig = async () => {
-  const connection = db.select().from(syncConnections).where(eq(syncConnections.source, 'clickup')).get()
+  const connection = db
+    .select()
+    .from(syncConnections)
+    .where(eq(syncConnections.source, 'clickup'))
+    .get()
   if (!connection) return { config: null, error: null }
   if (!connection.enabled) return { config: null, error: null }
   const token = await keytar.getPassword(SERVICE_NAME, 'clickup')
@@ -232,11 +238,26 @@ const getClickUpConfig = async () => {
   if (!listIds.length) {
     return { config: null, error: 'Add at least one list id.' }
   }
-  return { config: { token, listIds, teamId, teamName, customFieldId, customFieldValue, customFieldOptionId }, error: null }
+  return {
+    config: {
+      token,
+      listIds,
+      teamId,
+      teamName,
+      customFieldId,
+      customFieldValue,
+      customFieldOptionId
+    },
+    error: null
+  }
 }
 
 const getRocketChatConfig = async () => {
-  const connection = db.select().from(syncConnections).where(eq(syncConnections.source, 'rocketchat')).get()
+  const connection = db
+    .select()
+    .from(syncConnections)
+    .where(eq(syncConnections.source, 'rocketchat'))
+    .get()
   if (!connection) return { config: null, error: null }
   if (!connection.enabled) return { config: null, error: null }
   if (!connection.baseUrl) return { config: null, error: 'Rocket.Chat base URL missing.' }
@@ -248,7 +269,10 @@ const getRocketChatConfig = async () => {
   const userId = scope.userId ?? null
   if (!userId) return { config: null, error: 'Rocket.Chat user id required.' }
   if (!rooms.length) return { config: null, error: 'Add at least one room or channel.' }
-  return { config: { baseUrl: connection.baseUrl, token, userId, rooms, lookbackDays }, error: null }
+  return {
+    config: { baseUrl: connection.baseUrl, token, userId, rooms, lookbackDays },
+    error: null
+  }
 }
 
 export async function syncClickUpNow() {

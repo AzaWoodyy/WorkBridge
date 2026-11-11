@@ -114,7 +114,13 @@
 
 body {
   @apply bg-background text-foreground antialiased;
-  font-family: "SF Pro Text", "SF Pro Display", "Inter", system-ui, -apple-system, sans-serif;
+  font-family:
+    'SF Pro Text',
+    'SF Pro Display',
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
   letter-spacing: -0.01em;
   overflow: hidden;
 }
@@ -156,13 +162,13 @@ body {
 }
 
 .glass {
-  background: linear-gradient(135deg, rgba(255,255,255,0.75), rgba(255,255,255,0.4));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
   backdrop-filter: blur(18px);
 }
 
 .dark .glass,
 .oled .glass {
-  background: linear-gradient(135deg, rgba(20,24,32,0.82), rgba(20,24,32,0.55));
+  background: linear-gradient(135deg, rgba(20, 24, 32, 0.82), rgba(20, 24, 32, 0.55));
 }
 
 .markdown h1,

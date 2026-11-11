@@ -27,7 +27,9 @@ export function TopBar() {
         <div className="flex-1 min-w-0 text-sm text-muted-foreground truncate">
           Search tasks, MRs, messages...
         </div>
-        <div className="rounded-md border border-border/70 px-2 py-1 text-xs text-muted-foreground">Cmd + K</div>
+        <div className="rounded-md border border-border/70 px-2 py-1 text-xs text-muted-foreground">
+          Cmd + K
+        </div>
       </button>
 
       <div className="flex items-center gap-4">
@@ -40,8 +42,8 @@ export function TopBar() {
                 gitlabStatus?.status === 'syncing'
                   ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
                   : gitlabStatus?.status === 'error'
-                  ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
-                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                    ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+                    : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
               )}
             >
               GitLab {gitlabStatus?.status ?? 'idle'}
@@ -52,8 +54,8 @@ export function TopBar() {
                 clickupStatus?.status === 'syncing'
                   ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
                   : clickupStatus?.status === 'error'
-                  ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
-                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                    ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+                    : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
               )}
             >
               ClickUp {clickupStatus?.status ?? 'idle'}
@@ -64,8 +66,8 @@ export function TopBar() {
                 rocketStatus?.status === 'syncing'
                   ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
                   : rocketStatus?.status === 'error'
-                  ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
-                  : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                    ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+                    : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
               )}
             >
               Rocket.Chat {rocketStatus?.status ?? 'idle'}
@@ -97,7 +99,12 @@ export function TopBar() {
             </Button>
           </div>
         </div>
-        <Button variant="outline" size="icon" onClick={() => setTheme(nextTheme)} aria-label="Toggle theme">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setTheme(nextTheme)}
+          aria-label="Toggle theme"
+        >
           {theme === 'dark' ? <SunIcon /> : theme === 'oled' ? <DotFilledIcon /> : <MoonIcon />}
         </Button>
       </div>

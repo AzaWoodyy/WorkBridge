@@ -1,6 +1,14 @@
 import { cn } from '@renderer/lib/utils'
 
-export function EmptyState({ title, description, className }: { title: string; description: string; className?: string }) {
+export function EmptyState({
+  title,
+  description,
+  className
+}: {
+  title: string
+  description: string
+  className?: string
+}) {
   return (
     <div
       className={cn(

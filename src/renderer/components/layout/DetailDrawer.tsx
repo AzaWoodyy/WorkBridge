@@ -39,7 +39,15 @@ const lanes: { key: PlannerLane; label: string }[] = [
   { key: 'done', label: 'Done' }
 ]
 
-export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?: string; onClose: () => void }) {
+export function DetailDrawer({
+  open,
+  itemId,
+  onClose
+}: {
+  open: boolean
+  itemId?: string
+  onClose: () => void
+}) {
   const { data: items } = useItems()
   const { data: planner } = usePlanner()
   const { data: links } = useLinks()
@@ -72,7 +80,11 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
   const rocketQuickReactions = [':eyes:', ':ping_pong:', ':white_check_mark:', ':hourglass:']
   const displayRocketEmoji = (value: string) => {
     if (!value) return value
-    const normalized = value.startsWith(':') ? value : value.length > 2 ? `:${value.replace(/:/g, '')}:` : value
+    const normalized = value.startsWith(':')
+      ? value
+      : value.length > 2
+        ? `:${value.replace(/:/g, '')}:`
+        : value
     const converted = joypixels.shortnameToUnicode(normalized)
     return converted || value
   }
@@ -143,15 +155,18 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
     }
   }, [item?.id, item?.source, item?.meta?.projectId])
 
-
   const relatedLinks = useMemo(() => {
     if (!item || !links) return []
-    return links.filter((link) => link.fromItemId === item.id || link.toItemId === item.id) as Link[]
+    return links.filter(
+      (link) => link.fromItemId === item.id || link.toItemId === item.id
+    ) as Link[]
   }, [item, links])
 
   const relatedItems = useMemo(() => {
     if (!item || !links || !items) return []
-    const relatedIds = relatedLinks.map((link) => (link.fromItemId === item.id ? link.toItemId : link.fromItemId))
+    const relatedIds = relatedLinks.map((link) =>
+      link.fromItemId === item.id ? link.toItemId : link.fromItemId
+    )
     return items.filter((entry) => relatedIds.includes(entry.id))
   }, [item, links, items, relatedLinks])
 
@@ -164,7 +179,9 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
     if (!item || !items) return []
     return items
       .filter((entry) => entry.id !== item.id)
-      .filter((entry) => (item.source === 'gitlab' ? entry.source === 'clickup' : entry.source === 'gitlab'))
+      .filter((entry) =>
+        item.source === 'gitlab' ? entry.source === 'clickup' : entry.source === 'gitlab'
+      )
       .filter((entry) => entry.title.toLowerCase().includes(linkSearch.toLowerCase()))
   }, [item, items, linkSearch])
 
@@ -242,7 +259,9 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
 
       <div className="mt-6 space-y-4 text-sm">
         <div className="border-b border-border/60 pb-6">
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Summary</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Summary
+          </div>
           <div className="markdown mt-3 text-sm text-foreground">
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkEmoji]}
@@ -275,25 +294,37 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
 
         {item.source === 'gitlab' ? (
           <div className="border-b border-border/60 pb-6">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">GitLab details</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              GitLab details
+            </div>
             <div className="mt-3 grid gap-2 text-sm">
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">State</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.state ?? item.status}>
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title={meta.state ?? item.status}
+                >
                   {meta.state ?? item.status}
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Draft</span>
-                <span className="font-medium text-foreground text-right">{meta.draft ? 'Yes' : 'No'}</span>
+                <span className="font-medium text-foreground text-right">
+                  {meta.draft ? 'Yes' : 'No'}
+                </span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Approved</span>
-                <span className="font-medium text-foreground text-right">{isApproved ? 'Yes' : 'No'}</span>
+                <span className="font-medium text-foreground text-right">
+                  {isApproved ? 'Yes' : 'No'}
+                </span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Pipeline</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.pipelineStatus ?? 'Unknown'}>
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title={meta.pipelineStatus ?? 'Unknown'}
+                >
                   {meta.pipelineStatus ?? 'Unknown'}
                 </span>
               </div>
@@ -317,7 +348,10 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Approvals</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title="Approvals">
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title="Approvals"
+                >
                   {meta.approvals
                     ? `${meta.approvals.approvedBy?.length ?? 0} approved · ${meta.approvals.approvalsLeft ?? '?'} left`
                     : 'Not available'}
@@ -325,7 +359,9 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
               </div>
             </div>
             <div className="mt-5 grid gap-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Actions
+              </div>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">Add comment</span>
                 <textarea
@@ -365,7 +401,10 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                   gitlabLabelsMutation.mutate({
                     projectId: meta.projectId,
                     iid: meta.iid,
-                    labels: mrLabels.split(',').map((entry) => entry.trim()).filter(Boolean)
+                    labels: mrLabels
+                      .split(',')
+                      .map((entry) => entry.trim())
+                      .filter(Boolean)
                   })
                 }
               >
@@ -401,13 +440,13 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                   gitlabReviewersMutation.mutate({
                     projectId: meta.projectId,
                     iid: meta.iid,
-                  assignees: mrAssignees,
-                  reviewers: mrReviewers
-                })
-              }
-            >
-              Update assignees & reviewers
-            </Button>
+                    assignees: mrAssignees,
+                    reviewers: mrReviewers
+                  })
+                }
+              >
+                Update assignees & reviewers
+              </Button>
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="secondary"
@@ -440,7 +479,10 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                       {message.meta?.author ? `@${message.meta.author}` : 'Rocket.Chat'} •{' '}
                       {message.projectOrRoom}
                     </div>
-                    <div className="mt-2 text-sm text-foreground break-words line-clamp-3" title={message.snippet}>
+                    <div
+                      className="mt-2 text-sm text-foreground break-words line-clamp-3"
+                      title={message.snippet}
+                    >
                       {message.snippet}
                     </div>
                   </div>
@@ -452,17 +494,25 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
 
         {item.source === 'clickup' ? (
           <div className="border-b border-border/60 pb-6">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ClickUp details</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              ClickUp details
+            </div>
             <div className="mt-3 grid gap-2 text-sm">
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Status</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.status ?? item.status}>
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title={meta.status ?? item.status}
+                >
                   {meta.status ?? item.status}
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Priority</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.priority ?? 'None'}>
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title={meta.priority ?? 'None'}
+                >
                   {meta.priority ?? 'None'}
                 </span>
               </div>
@@ -477,39 +527,56 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">List</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.listName ?? 'Unknown'}>
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title={meta.listName ?? 'Unknown'}
+                >
                   {meta.listName ?? 'Unknown'}
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Folder</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.folderName ?? '—'}>
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title={meta.folderName ?? '—'}
+                >
                   {meta.folderName ?? '—'}
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Space</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.spaceName ?? '—'}>
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title={meta.spaceName ?? '—'}
+                >
                   {meta.spaceName ?? '—'}
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Custom field</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.customField ?? meta.equipe ?? '—'}>
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title={meta.customField ?? meta.equipe ?? '—'}
+                >
                   {meta.customField ?? meta.equipe ?? '—'}
                 </span>
               </div>
               {item.dueAt ? (
                 <div className="flex items-start justify-between gap-3 min-w-0">
                   <span className="text-muted-foreground">Due</span>
-                  <span className="font-medium text-foreground text-right min-w-0 truncate" title={new Date(item.dueAt).toLocaleString()}>
+                  <span
+                    className="font-medium text-foreground text-right min-w-0 truncate"
+                    title={new Date(item.dueAt).toLocaleString()}
+                  >
                     {new Date(item.dueAt).toLocaleString()}
                   </span>
                 </div>
               ) : null}
             </div>
             <div className="mt-5 grid gap-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Actions
+              </div>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">Add comment</span>
                 <textarea
@@ -537,27 +604,39 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
 
         {item.source === 'rocketchat' ? (
           <div className="border-b border-border/60 pb-6">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rocket.Chat details</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Rocket.Chat details
+            </div>
             <div className="mt-3 grid gap-2 text-sm">
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Room</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={item.projectOrRoom}>
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title={item.projectOrRoom}
+                >
                   {item.projectOrRoom}
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Author</span>
-                <span className="font-medium text-foreground text-right min-w-0 truncate" title={meta.author ?? 'Unknown'}>
+                <span
+                  className="font-medium text-foreground text-right min-w-0 truncate"
+                  title={meta.author ?? 'Unknown'}
+                >
                   {meta.author ?? 'Unknown'}
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3 min-w-0">
                 <span className="text-muted-foreground">Review request</span>
-                <span className="font-medium text-foreground text-right">{meta.reviewRequest ? 'Yes' : 'No'}</span>
+                <span className="font-medium text-foreground text-right">
+                  {meta.reviewRequest ? 'Yes' : 'No'}
+                </span>
               </div>
             </div>
             <div className="mt-5 grid gap-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Actions
+              </div>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">Reply in thread</span>
                 <textarea
@@ -582,7 +661,9 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                 Post reply
               </Button>
               <div className="space-y-2">
-                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Quick reactions</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Quick reactions
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {rocketQuickReactions.map((emoji) => (
                     <button
@@ -631,28 +712,31 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                     Reactions
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {Object.entries(meta.reactions as Record<string, { count?: number; usernames?: string[] }>).map(
-                      ([emoji, data]) => (
-                        <div key={emoji} className="flex items-center gap-2 rounded-full border border-border/60 px-3 py-1 text-sm">
-                          <span>{displayRocketEmoji(emoji)}</span>
-                          <span className="text-xs text-muted-foreground">{data?.count ?? 1}</span>
-                          {data?.usernames?.length ? (
-                            <span className="text-[11px] text-muted-foreground">
-                              {data.usernames.join(', ')}
-                            </span>
-                          ) : null}
-                          <button
-                            className="text-[11px] text-muted-foreground hover:text-foreground"
-                            onClick={() => {
-                              const messageId = item.id.replace('rc-msg-', '')
-                              rocketReactMutation.mutate({ messageId, emoji, shouldReact: false })
-                            }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      )
-                    )}
+                    {Object.entries(
+                      meta.reactions as Record<string, { count?: number; usernames?: string[] }>
+                    ).map(([emoji, data]) => (
+                      <div
+                        key={emoji}
+                        className="flex items-center gap-2 rounded-full border border-border/60 px-3 py-1 text-sm"
+                      >
+                        <span>{displayRocketEmoji(emoji)}</span>
+                        <span className="text-xs text-muted-foreground">{data?.count ?? 1}</span>
+                        {data?.usernames?.length ? (
+                          <span className="text-[11px] text-muted-foreground">
+                            {data.usernames.join(', ')}
+                          </span>
+                        ) : null}
+                        <button
+                          className="text-[11px] text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            const messageId = item.id.replace('rc-msg-', '')
+                            rocketReactMutation.mutate({ messageId, emoji, shouldReact: false })
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ) : null}
@@ -661,12 +745,16 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
         ) : null}
 
         <div className="border-b border-border/60 pb-6">
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Planning</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Planning
+          </div>
           {plannerEntry ? (
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Lane</span>
-                <span className="font-medium text-foreground">{plannerEntry.lane.replace('_', ' ')}</span>
+                <span className="font-medium text-foreground">
+                  {plannerEntry.lane.replace('_', ' ')}
+                </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Priority</span>
@@ -674,10 +762,14 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Pinned</span>
-                <span className="font-medium text-foreground">{plannerEntry.pinned ? 'Yes' : 'No'}</span>
+                <span className="font-medium text-foreground">
+                  {plannerEntry.pinned ? 'Yes' : 'No'}
+                </span>
               </div>
               {plannerEntry.personalNote ? (
-                <div className="text-xs text-muted-foreground">Note: {plannerEntry.personalNote}</div>
+                <div className="text-xs text-muted-foreground">
+                  Note: {plannerEntry.personalNote}
+                </div>
               ) : null}
             </div>
           ) : (
@@ -686,7 +778,9 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
         </div>
 
         <div className="border-b border-border/60 pb-6">
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Update planning</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Update planning
+          </div>
           <div className="mt-3 grid gap-3 text-sm">
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Lane</span>
@@ -723,13 +817,18 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
             <div className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
               <div>
                 <div className="text-sm font-medium text-foreground">Pinned</div>
-                <div className="text-xs text-muted-foreground">Keep this at the top of its lane.</div>
+                <div className="text-xs text-muted-foreground">
+                  Keep this at the top of its lane.
+                </div>
               </div>
               <Button
                 variant={plannerEntry?.pinned ? 'secondary' : 'outline'}
                 size="sm"
                 onClick={() =>
-                  plannerMutation.mutate({ itemId: item.id, pinned: !(plannerEntry?.pinned ?? false) })
+                  plannerMutation.mutate({
+                    itemId: item.id,
+                    pinned: !(plannerEntry?.pinned ?? false)
+                  })
                 }
               >
                 {plannerEntry?.pinned ? 'Pinned' : 'Pin'}
@@ -755,7 +854,9 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
         </div>
 
         <div className="border-b border-border/60 pb-6">
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Related items</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Related items
+          </div>
           <div className="mt-3 space-y-3">
             {relatedItems.length === 0 ? (
               <div className="text-sm text-muted-foreground">No linked items yet.</div>
@@ -767,40 +868,47 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                     (entry.toItemId === item.id && entry.fromItemId === related.id)
                 )
                 return (
-                <div key={related.id} className="rounded-lg border border-border/60 p-3 min-w-0">
-                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                    <SourceBadge source={related.source} />
-                    <span className="text-xs text-muted-foreground min-w-0 truncate" title={related.projectOrRoom}>
-                      {related.projectOrRoom}
-                    </span>
-                    {link?.suggested ? (
-                      <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] text-amber-700 dark:text-amber-300">
-                        Suggested
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] text-emerald-700 dark:text-emerald-300">
-                        Confirmed
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-2 text-sm font-medium text-foreground line-clamp-2" title={related.title}>
-                    {related.title}
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{link?.relationType?.replace('_', ' ')}</span>
-                    {link?.suggested ? (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="h-7 px-2 text-[11px]"
-                        onClick={() => confirmLinkMutation.mutate(link.id)}
+                  <div key={related.id} className="rounded-lg border border-border/60 p-3 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                      <SourceBadge source={related.source} />
+                      <span
+                        className="text-xs text-muted-foreground min-w-0 truncate"
+                        title={related.projectOrRoom}
                       >
-                        Confirm
-                      </Button>
-                    ) : null}
+                        {related.projectOrRoom}
+                      </span>
+                      {link?.suggested ? (
+                        <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] text-amber-700 dark:text-amber-300">
+                          Suggested
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] text-emerald-700 dark:text-emerald-300">
+                          Confirmed
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      className="mt-2 text-sm font-medium text-foreground line-clamp-2"
+                      title={related.title}
+                    >
+                      {related.title}
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{link?.relationType?.replace('_', ' ')}</span>
+                      {link?.suggested ? (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => confirmLinkMutation.mutate(link.id)}
+                        >
+                          Confirm
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              )})
+                )
+              })
             )}
           </div>
           <Button variant="outline" size="sm" className="mt-3" onClick={() => setLinkOpen(true)}>
@@ -809,7 +917,9 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
         </div>
 
         <div className="border-b border-border/60 pb-6">
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sync status</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Sync status
+          </div>
           <div className="mt-3 text-sm text-muted-foreground">
             Sync runs on your configured cadence. Use Sync now to refresh immediately.
           </div>
@@ -817,7 +927,11 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
             <Button variant="secondary" size="sm">
               Retry sync
             </Button>
-            <Button variant="outline" size="sm" onClick={() => window.workbridge.openExternal(item.url)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.workbridge.openExternal(item.url)}
+            >
               Open source link
             </Button>
           </div>
@@ -869,14 +983,22 @@ export function DetailDrawer({ open, itemId, onClose }: { open: boolean; itemId?
                     )}
                   >
                     <div className="min-w-0">
-                      <div className="font-medium text-foreground line-clamp-2" title={candidate.title}>
+                      <div
+                        className="font-medium text-foreground line-clamp-2"
+                        title={candidate.title}
+                      >
                         {candidate.title}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate" title={candidate.projectOrRoom}>
+                      <div
+                        className="text-xs text-muted-foreground truncate"
+                        title={candidate.projectOrRoom}
+                      >
                         {candidate.projectOrRoom}
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground shrink-0">{candidate.source}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {candidate.source}
+                    </span>
                   </button>
                 ))
               )}

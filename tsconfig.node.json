@@ -8,12 +8,24 @@
     "resolveJsonModule": true,
     "allowJs": false,
     "noEmit": true,
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "baseUrl": ".",
     "paths": {
-      "@renderer/*": ["src/renderer/*"]
-    }
+      "@renderer/*": [
+        "src/renderer/*"
+      ]
+    },
+    "skipLibCheck": true
   },
-  "include": ["src/main/**/*.ts", "src/preload/**/*.ts", "electron.vite.config.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/main/**/*.ts",
+    "src/preload/**/*.ts",
+    "electron.vite.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

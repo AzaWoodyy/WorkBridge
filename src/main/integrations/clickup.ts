@@ -94,7 +94,10 @@ export async function listClickUpLists(token: string) {
           `/folder/${folder.id}/list?archived=false`
         )
         for (const list of folderLists.lists ?? []) {
-          results.push({ id: list.id, label: `${team.name} / ${space.name} / ${folder.name} / ${list.name}` })
+          results.push({
+            id: list.id,
+            label: `${team.name} / ${space.name} / ${folder.name} / ${list.name}`
+          })
         }
       }
     }
@@ -104,10 +107,14 @@ export async function listClickUpLists(token: string) {
 }
 
 export async function listClickUpCustomFieldOptions(token: string, listId: string, field: string) {
-  const data = await clickupFetch<{ fields: ClickUpTask['custom_fields'] }>(token, `/list/${listId}/field`)
+  const data = await clickupFetch<{ fields: ClickUpTask['custom_fields'] }>(
+    token,
+    `/list/${listId}/field`
+  )
   const fields = data.fields ?? []
-  const customFieldField =
-    fields.find((entry) => entry.id === field || entry.name?.toLowerCase() === field.toLowerCase())
+  const customFieldField = fields.find(
+    (entry) => entry.id === field || entry.name?.toLowerCase() === field.toLowerCase()
+  )
   if (!customFieldField || !customFieldField.type_config?.options) {
     return { fieldId: customFieldField?.id ?? null, options: [] }
   }
@@ -170,7 +177,12 @@ async function fetchTasksForList(token: string, listId: string, customFields?: s
   return tasks
 }
 
-async function fetchTasksForTeam(token: string, teamId: string, listIds: string[], customFields?: string | null) {
+async function fetchTasksForTeam(
+  token: string,
+  teamId: string,
+  listIds: string[],
+  customFields?: string | null
+) {
   const tasks: ClickUpTask[] = []
   let page = 0
 
@@ -230,19 +242,17 @@ const isDueToday = (dueAt?: string | null) => {
 }
 
 export async function syncClickUp(connection: ClickUpConnection) {
-  const { token, listIds, teamId, teamName, customFieldId, customFieldValue, customFieldOptionId } = connection
+  const { token, listIds, teamId, teamName, customFieldId, customFieldValue, customFieldOptionId } =
+    connection
   const tasks: ClickUpTask[] = []
   const errors: string[] = []
   const statusCounts = new Map<string, number>()
 
   let resolvedTeamId = teamId ?? null
-  let resolvedTeamName = teamName ?? null
   if (!resolvedTeamId && teamName) {
     resolvedTeamId = await resolveTeamId(token, teamName)
     if (!resolvedTeamId) {
-      errors.push(`Team name \"${teamName}\" not found.`)
-    } else {
-      resolvedTeamName = teamName
+      errors.push(`Team name "${teamName}" not found.`)
     }
   }
 
@@ -286,7 +296,8 @@ export async function syncClickUp(connection: ClickUpConnection) {
       ? true
       : listIds.length
         ? listIds.some(
-            (id) => id === task.list?.id || (Array.isArray(task.list_ids) && task.list_ids.includes(id))
+            (id) =>
+              id === task.list?.id || (Array.isArray(task.list_ids) && task.list_ids.includes(id))
           )
         : true
 

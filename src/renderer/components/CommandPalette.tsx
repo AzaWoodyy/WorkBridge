@@ -208,7 +208,9 @@ export function CommandPalette() {
                   </div>
                   <div className="mt-2 space-y-1">
                     {filteredActions.map((action) => {
-                      const index = entries.findIndex((entry) => entry.type === 'action' && entry.action.id === action.id)
+                      const index = entries.findIndex(
+                        (entry) => entry.type === 'action' && entry.action.id === action.id
+                      )
                       return (
                         <button
                           key={action.id}
@@ -226,7 +228,9 @@ export function CommandPalette() {
                             ) : null}
                           </div>
                           {action.shortcut ? (
-                            <div className="text-[11px] text-muted-foreground">{action.shortcut}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {action.shortcut}
+                            </div>
                           ) : null}
                         </button>
                       )
@@ -242,7 +246,9 @@ export function CommandPalette() {
                   </div>
                   <div className="mt-2 space-y-1">
                     {filteredItems.map((item) => {
-                      const index = entries.findIndex((entry) => entry.type === 'item' && entry.item.id === item.id)
+                      const index = entries.findIndex(
+                        (entry) => entry.type === 'item' && entry.item.id === item.id
+                      )
                       return (
                         <button
                           key={item.id}
@@ -256,7 +262,10 @@ export function CommandPalette() {
                           )}
                         >
                           <div className="min-w-0">
-                            <div className="font-medium text-foreground line-clamp-2" title={item.title}>
+                            <div
+                              className="font-medium text-foreground line-clamp-2"
+                              title={item.title}
+                            >
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm, remarkEmoji]}
                                 components={{
@@ -278,11 +287,16 @@ export function CommandPalette() {
                                 {item.title.replace(/\s*\n\s*/g, ' ')}
                               </ReactMarkdown>
                             </div>
-                            <div className="text-xs text-muted-foreground truncate" title={item.projectOrRoom}>
+                            <div
+                              className="text-xs text-muted-foreground truncate"
+                              title={item.projectOrRoom}
+                            >
                               {item.projectOrRoom}
                             </div>
                           </div>
-                          <div className="text-[11px] text-muted-foreground shrink-0">{item.source}</div>
+                          <div className="text-[11px] text-muted-foreground shrink-0">
+                            {item.source}
+                          </div>
                         </button>
                       )
                     })}

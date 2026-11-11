@@ -5,29 +5,33 @@ export async function fetchItems(): Promise<WorkItem[]> {
   return rows.map((row) => {
     const meta = row.rawJson ? JSON.parse(row.rawJson) : undefined
     const normalizedDue =
-      row.dueAt && /^[0-9]+$/.test(row.dueAt) ? new Date(Number(row.dueAt)).toISOString() : row.dueAt ?? undefined
+      row.dueAt && /^[0-9]+$/.test(row.dueAt)
+        ? new Date(Number(row.dueAt)).toISOString()
+        : (row.dueAt ?? undefined)
     const needsReview =
       row.itemType === 'message'
         ? Boolean(meta?.reviewRequest ?? row.title.toLowerCase().includes('review'))
         : row.source === 'gitlab'
-        ? meta?.state === 'opened' && !meta?.draft && !(meta?.approvals?.approved ?? false)
-        : false
+          ? meta?.state === 'opened' && !meta?.draft && !(meta?.approvals?.approved ?? false)
+          : false
 
     return {
-    id: row.id,
-    source: row.source,
-    itemType: row.itemType,
-    title: row.title,
-    snippet: row.bodySnippet ?? '',
-    url: row.url,
-    status: row.status,
-    projectOrRoom: row.projectOrRoomName ?? '',
-    assignees: row.assigneeSummary ? row.assigneeSummary.split(',').map((entry) => entry.trim()) : [],
-    dueAt: normalizedDue,
-    updatedAt: row.updatedAt,
-    needsReview,
-    meta
-  }
+      id: row.id,
+      source: row.source,
+      itemType: row.itemType,
+      title: row.title,
+      snippet: row.bodySnippet ?? '',
+      url: row.url,
+      status: row.status,
+      projectOrRoom: row.projectOrRoomName ?? '',
+      assignees: row.assigneeSummary
+        ? row.assigneeSummary.split(',').map((entry) => entry.trim())
+        : [],
+      dueAt: normalizedDue,
+      updatedAt: row.updatedAt,
+      needsReview,
+      meta
+    }
   })
 }
 
@@ -67,7 +71,12 @@ export async function storeToken(source: string, token: string) {
   return window.workbridge.storeToken(source, token)
 }
 
-export async function testConnection(payload: { source: string; baseUrl?: string; token?: string; userId?: string }) {
+export async function testConnection(payload: {
+  source: string
+  baseUrl?: string
+  token?: string
+  userId?: string
+}) {
   return window.workbridge.testConnection(payload)
 }
 
@@ -131,19 +140,36 @@ export async function clickupAddComment(payload: { taskId: string; body: string 
   return window.workbridge.clickupAddComment(payload)
 }
 
-export async function rocketChatThreadReply(payload: { roomId: string; threadId: string; body: string }) {
+export async function rocketChatThreadReply(payload: {
+  roomId: string
+  threadId: string
+  body: string
+}) {
   return window.workbridge.rocketChatThreadReply(payload)
 }
 
-export async function rocketChatReact(payload: { messageId: string; emoji: string; shouldReact?: boolean }) {
+export async function rocketChatReact(payload: {
+  messageId: string
+  emoji: string
+  shouldReact?: boolean
+}) {
   return window.workbridge.rocketChatReact(payload)
 }
 
-export async function gitlabUpdateLabels(payload: { projectId: number; iid: number; labels: string[] }) {
+export async function gitlabUpdateLabels(payload: {
+  projectId: number
+  iid: number
+  labels: string[]
+}) {
   return window.workbridge.gitlabUpdateLabels(payload)
 }
 
-export async function gitlabUpdateReviewers(payload: { projectId: number; iid: number; assignees: string[]; reviewers: string[] }) {
+export async function gitlabUpdateReviewers(payload: {
+  projectId: number
+  iid: number
+  assignees: string[]
+  reviewers: string[]
+}) {
   return window.workbridge.gitlabUpdateReviewers(payload)
 }
 
@@ -155,7 +181,13 @@ export async function gitlabUnapprove(payload: { projectId: number; iid: number 
   return window.workbridge.gitlabUnapprove(payload)
 }
 
-export async function createLink(payload: { fromId: string; toId: string; relationType: string; origin: 'manual' | 'auto'; suggested: boolean }) {
+export async function createLink(payload: {
+  fromId: string
+  toId: string
+  relationType: string
+  origin: 'manual' | 'auto'
+  suggested: boolean
+}) {
   return window.workbridge.createLink(payload)
 }
 

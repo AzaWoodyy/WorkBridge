@@ -60,7 +60,12 @@ export function useConnections() {
 }
 
 export function useSyncStatus() {
-  return useQuery({ queryKey: ['sync-status'], queryFn: fetchSyncStatus, refetchOnWindowFocus: false, refetchInterval: 30000 })
+  return useQuery({
+    queryKey: ['sync-status'],
+    queryFn: fetchSyncStatus,
+    refetchOnWindowFocus: false,
+    refetchInterval: 30000
+  })
 }
 
 export function useSyncCadence() {

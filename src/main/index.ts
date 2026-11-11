@@ -41,12 +41,14 @@ const createWindow = () => {
   })
   win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     const dev = Boolean(process.env.ELECTRON_RENDERER_URL) && !app.isPackaged
-    callback({ responseHeaders: {
-      ...details.responseHeaders,
-      'Content-Security-Policy': [
-        `default-src 'self'; script-src 'self'${dev ? " 'unsafe-inline'" : ''}; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'${dev ? ' ws://localhost:* ws://127.0.0.1:*' : ''}; object-src 'none'; base-uri 'none'; frame-src 'none'`
-      ]
-    } })
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          `default-src 'self'; script-src 'self'${dev ? " 'unsafe-inline'" : ''}; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'${dev ? ' ws://localhost:* ws://127.0.0.1:*' : ''}; object-src 'none'; base-uri 'none'; frame-src 'none'`
+        ]
+      }
+    })
   })
 
   if (process.env.ELECTRON_RENDERER_URL) {
@@ -58,7 +60,6 @@ const createWindow = () => {
   if (process.env.ELECTRON_RENDERER_URL) {
     win.webContents.openDevTools({ mode: 'detach' })
   }
-
 }
 
 app.whenReady().then(async () => {

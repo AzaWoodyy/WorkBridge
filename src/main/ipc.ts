@@ -27,18 +27,25 @@ import {
   updateGitLabMrAssigneesReviewers,
   updateGitLabMrLabels
 } from './integrations/gitlab'
-import { addClickUpTaskComment, listClickUpCustomFieldOptions, listClickUpLists } from './integrations/clickup'
-import { listRocketChatRooms, postRocketChatThreadReply, reactRocketChatMessage } from './integrations/rocketchat'
+import {
+  addClickUpTaskComment,
+  listClickUpCustomFieldOptions,
+  listClickUpLists
+} from './integrations/clickup'
+import {
+  listRocketChatRooms,
+  postRocketChatThreadReply,
+  reactRocketChatMessage
+} from './integrations/rocketchat'
 
 const SERVICE_NAME = 'WorkBridge'
-
 
 export type PlannerUpdate = {
   itemId: string
   lane?: string
   priority?: string
   pinned?: boolean
-  personalNote?: string
+  personalNote?: string | null
 }
 
 export type ConnectionPayload = {
@@ -50,7 +57,11 @@ export type ConnectionPayload = {
 }
 
 const getGitLabAuth = async () => {
-  const connection = db.select().from(syncConnections).where(eq(syncConnections.source, 'gitlab')).get()
+  const connection = db
+    .select()
+    .from(syncConnections)
+    .where(eq(syncConnections.source, 'gitlab'))
+    .get()
   if (!connection?.baseUrl) throw new Error('GitLab base URL missing.')
   const token = await keytar.getPassword(SERVICE_NAME, 'gitlab')
   if (!token) throw new Error('GitLab token missing.')
@@ -64,7 +75,11 @@ const getClickUpAuth = async () => {
 }
 
 const getRocketChatAuth = async () => {
-  const connection = db.select().from(syncConnections).where(eq(syncConnections.source, 'rocketchat')).get()
+  const connection = db
+    .select()
+    .from(syncConnections)
+    .where(eq(syncConnections.source, 'rocketchat'))
+    .get()
   if (!connection?.baseUrl) throw new Error('Rocket.Chat base URL missing.')
   const token = await keytar.getPassword(SERVICE_NAME, 'rocketchat')
   if (!token) throw new Error('Rocket.Chat token missing.')
@@ -74,10 +89,12 @@ const getRocketChatAuth = async () => {
   return { baseUrl: connection.baseUrl, token, userId }
 }
 
-const demoBlocked = /workbridge:(store-token|save-connection|test-connection|list-|gitlab-(add|update|approve|unapprove)|clickup-add|rocketchat-(thread|react)|trigger-sync)/
+const demoBlocked =
+  /workbridge:(store-token|save-connection|test-connection|list-|gitlab-(add|update|approve|unapprove)|clickup-add|rocketchat-(thread|react)|trigger-sync)/
 const handle: typeof ipcMain.handle = (channel, listener) => {
   ipcMain.handle(channel, (event, ...args) => {
-    if (isDemo && demoBlocked.test(channel)) throw new Error('Remote connections are disabled in demo mode.')
+    if (isDemo && demoBlocked.test(channel))
+      throw new Error('Remote connections are disabled in demo mode.')
     return listener(event, ...args)
   })
 }
@@ -178,7 +195,10 @@ export function registerIpc() {
 
   handle(
     'workbridge:test-connection',
-    async (_event, payload: { source: string; baseUrl?: string; token?: string; userId?: string }) => {
+    async (
+      _event,
+      payload: { source: string; baseUrl?: string; token?: string; userId?: string }
+    ) => {
       try {
         if (payload.source === 'gitlab') {
           if (!payload.baseUrl || !payload.token) {
@@ -274,16 +294,20 @@ export function registerIpc() {
     }
   })
 
-  handle('workbridge:list-clickup-custom-field-options', async (_event, listId: string, field: string) => {
-    try {
-      const { token } = await getClickUpAuth()
-      const options = await listClickUpCustomFieldOptions(token, listId, field)
-      return { ok: true, options }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load customField options.'
-      return { ok: false, message, options: { fieldId: null, options: [] } }
+  handle(
+    'workbridge:list-clickup-custom-field-options',
+    async (_event, listId: string, field: string) => {
+      try {
+        const { token } = await getClickUpAuth()
+        const options = await listClickUpCustomFieldOptions(token, listId, field)
+        return { ok: true, options }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to load customField options.'
+        return { ok: false, message, options: { fieldId: null, options: [] } }
+      }
     }
-  })
+  )
 
   handle('workbridge:list-rocketchat-rooms', async () => {
     try {
@@ -305,13 +329,19 @@ export function registerIpc() {
   })
 
   handle('workbridge:get-gitlab-diagnostics', () => {
-    const gitlabItems = db.select().from(externalItems).where(eq(externalItems.source, 'gitlab')).all()
+    const gitlabItems = db
+      .select()
+      .from(externalItems)
+      .where(eq(externalItems.source, 'gitlab'))
+      .all()
     const plannerRows = db.select().from(plannerState).all()
     const linkRows = db.select().from(links).all()
     const gitlabIds = new Set(gitlabItems.map((row) => row.id))
 
     const plannerForGitLabRows = plannerRows.filter((row) => gitlabIds.has(row.itemId))
-    const orphanPlannerRows = plannerRows.filter((row) => row.itemId.startsWith('gl-mr-') && !gitlabIds.has(row.itemId))
+    const orphanPlannerRows = plannerRows.filter(
+      (row) => row.itemId.startsWith('gl-mr-') && !gitlabIds.has(row.itemId)
+    )
     const linksTouchingGitLab = linkRows.filter(
       (row) => gitlabIds.has(row.fromItemId) || gitlabIds.has(row.toItemId)
     )
@@ -328,7 +358,11 @@ export function registerIpc() {
       .filter(([, ids]) => ids.length > 1)
       .map(([externalId, ids]) => ({ externalId, ids }))
 
-    const connection = db.select().from(syncConnections).where(eq(syncConnections.source, 'gitlab')).get()
+    const connection = db
+      .select()
+      .from(syncConnections)
+      .where(eq(syncConnections.source, 'gitlab'))
+      .get()
     const recentAudit = sqlite
       .prepare(
         `
@@ -340,14 +374,14 @@ export function registerIpc() {
       `
       )
       .all() as Array<{
-        id: number
-        eventType: string
-        tableName: string
-        rowId: string
-        source: string | null
-        payloadJson: string | null
-        createdAt: string
-      }>
+      id: number
+      eventType: string
+      tableName: string
+      rowId: string
+      source: string | null
+      payloadJson: string | null
+      createdAt: string
+    }>
 
     return {
       gitlabItemCount: gitlabItems.length,
@@ -355,7 +389,9 @@ export function registerIpc() {
       gitlabLinkCount: linksTouchingGitLab.length,
       orphanPlannerCount: orphanPlannerRows.length,
       duplicateExternalIds,
-      sampleIdentityMap: gitlabItems.slice(0, 20).map((row) => ({ id: row.id, externalId: row.externalId })),
+      sampleIdentityMap: gitlabItems
+        .slice(0, 20)
+        .map((row) => ({ id: row.id, externalId: row.externalId })),
       recentAudit,
       connection: connection
         ? {
@@ -413,7 +449,16 @@ export function registerIpc() {
 
   handle(
     'workbridge:create-link',
-    async (_event, payload: { fromId: string; toId: string; relationType: string; origin: 'manual' | 'auto'; suggested: boolean }) => {
+    async (
+      _event,
+      payload: {
+        fromId: string
+        toId: string
+        relationType: string
+        origin: 'manual' | 'auto'
+        suggested: boolean
+      }
+    ) => {
       const existing = db
         .select()
         .from(links)
@@ -472,7 +517,14 @@ export function registerIpc() {
     'workbridge:rocketchat-thread-reply',
     async (_event, payload: { roomId: string; threadId: string; body: string }) => {
       const { baseUrl, token, userId } = await getRocketChatAuth()
-      await postRocketChatThreadReply(baseUrl, token, userId, payload.roomId, payload.threadId, payload.body)
+      await postRocketChatThreadReply(
+        baseUrl,
+        token,
+        userId,
+        payload.roomId,
+        payload.threadId,
+        payload.body
+      )
       await syncRocketChatNow()
       return { ok: true }
     }
@@ -507,7 +559,10 @@ export function registerIpc() {
 
   handle(
     'workbridge:gitlab-update-reviewers',
-    async (_event, payload: { projectId: number; iid: number; assignees: string[]; reviewers: string[] }) => {
+    async (
+      _event,
+      payload: { projectId: number; iid: number; assignees: string[]; reviewers: string[] }
+    ) => {
       const { baseUrl, token } = await getGitLabAuth()
       await updateGitLabMrAssigneesReviewers(
         baseUrl,
@@ -541,5 +596,4 @@ export function registerIpc() {
       return { ok: true }
     }
   )
-
 }
