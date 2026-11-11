@@ -9,7 +9,7 @@ const memory = vi.hoisted(() => ({
 }))
 vi.mock('../src/main/db/db', () => memory)
 vi.mock('../src/main/notifications', () => ({ notifyOnce: vi.fn() }))
-const { ensureSchema } = await import('../src/main/db/init')
+const { migrateDatabase } = await import('../src/main/db/migrate')
 const { syncGitLab } = await import('../src/main/integrations/gitlab')
 const mr = {
   id: 42,
@@ -26,7 +26,7 @@ beforeEach(() => {
   memory.sqlite?.close()
   memory.sqlite = new Database(':memory:')
   memory.db = drizzle(memory.sqlite)
-  ensureSchema()
+  migrateDatabase(memory.sqlite, 'drizzle')
   vi.stubGlobal(
     'fetch',
     vi.fn(

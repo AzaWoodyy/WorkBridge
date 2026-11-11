@@ -19,7 +19,8 @@
     "format": "prettier --write src",
     "format:check": "prettier --check src",
     "test": "vitest run",
-    "test:prepare": "npm rebuild better-sqlite3"
+    "test:prepare": "npm rebuild better-sqlite3",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",
@@ -51,6 +52,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
+    "drizzle-kit": "^0.31.11",
     "electron": "^31.2.0",
     "electron-builder": "^24.13.3",
     "electron-rebuild": "^3.2.9",
@@ -72,7 +74,8 @@
     "files": [
       "dist/**",
       "package.json",
-      "build/icon.png"
+      "build/icon.png",
+      "drizzle/**"
     ],
     "directories": {
       "buildResources": "build"
