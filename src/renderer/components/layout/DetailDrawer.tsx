@@ -280,6 +280,7 @@ export function DetailDrawer({
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Lane</span>
               <select
+                aria-label="Planning lane"
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 value={plannerEntry?.lane ?? 'inbox'}
                 onChange={(event) =>
@@ -296,6 +297,7 @@ export function DetailDrawer({
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Priority</span>
               <select
+                aria-label="Planning priority"
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 value={plannerEntry?.priority ?? 'P3'}
                 onChange={(event) =>
@@ -332,6 +334,7 @@ export function DetailDrawer({
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Personal note</span>
               <textarea
+                aria-label="Personal note"
                 className="min-h-[90px] w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
@@ -454,6 +457,7 @@ export function DetailDrawer({
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Relation</span>
               <select
+                aria-label="Link relation"
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 value={linkRelation}
                 onChange={(event) => setLinkRelation(event.target.value)}

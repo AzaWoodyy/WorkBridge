@@ -1,3 +1,4 @@
+import { isDemo } from '../runtime'
 import { BrowserWindow, Notification } from 'electron'
 import { credentials as keytar } from '../credentials'
 import { db } from '../db/db'
@@ -15,6 +16,7 @@ import {
 import { SERVICE_NAME } from './auth'
 import { handle } from './validate'
 export function registerSystemHandlers() {
+  handle('workbridge:get-runtime-info', () => ({ demo: isDemo }))
   handle('workbridge:test-notification', async () => {
     if (!Notification.isSupported()) {
       return { ok: false, message: 'Notifications are not supported on this system.' }

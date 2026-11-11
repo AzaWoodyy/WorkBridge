@@ -1,3 +1,4 @@
+import { useRuntimeInfo } from '@renderer/data/useRuntimeInfo'
 import { useConnections } from '@renderer/data/useDbData'
 import { cn } from '@renderer/lib/utils'
 import { useAppStore, type ViewKey } from '@renderer/store/appStore'
@@ -10,13 +11,14 @@ const navItems: { key: ViewKey; label: string }[] = [
 ]
 
 export function Sidebar() {
+  const { data: runtime } = useRuntimeInfo()
   const activeView = useAppStore((state) => state.activeView)
   const setActiveView = useAppStore((state) => state.setActiveView)
   const { data: connections } = useConnections()
   const hasConnections = connections?.some((conn) => conn.enabled) ?? false
 
   return (
-    <aside className="flex h-full w-60 flex-col border-r border-border/70 bg-card/70 p-6">
+    <aside className="flex h-full min-w-0 flex-col border-r border-border/70 bg-card/70 p-6">
       <div className="text-lg font-semibold tracking-tight">WorkBridge</div>
       <div className="mt-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
         From Enzo Neault
@@ -41,9 +43,11 @@ export function Sidebar() {
       </nav>
 
       <div className="rounded-xl border border-border/70 bg-background/60 p-3 text-xs text-muted-foreground">
-        {hasConnections
-          ? 'Connected sources are syncing.'
-          : 'No connections yet. Add one to start syncing.'}
+        {runtime?.demo
+          ? 'Demo · Fictional data. Remote sync and credentials are disabled.'
+          : hasConnections
+            ? 'Connected sources are syncing.'
+            : 'No connections yet. Add one to start syncing.'}
       </div>
     </aside>
   )

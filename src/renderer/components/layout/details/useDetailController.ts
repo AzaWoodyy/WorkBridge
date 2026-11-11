@@ -1,3 +1,4 @@
+import { useRuntimeInfo } from '@renderer/data/useRuntimeInfo'
 import { fetchGitLabMembers } from '@renderer/data/api'
 import type { Link } from '@renderer/data/types'
 import {
@@ -21,6 +22,7 @@ import * as joypixels from 'emoji-toolkit'
 import { useEffect, useMemo, useState } from 'react'
 
 export function useDetailController(itemId?: string) {
+  const { data: runtime } = useRuntimeInfo()
   const { data: items } = useItems()
   const { data: planner } = usePlanner()
   const { data: links } = useLinks()
@@ -93,7 +95,7 @@ export function useDetailController(itemId?: string) {
 
   useEffect(() => {
     const projectId = item?.source === 'gitlab' ? item.meta?.projectId : null
-    if (!projectId) {
+    if (!projectId || runtime?.demo !== false) {
       setGitlabMembers([])
       return
     }
@@ -126,7 +128,7 @@ export function useDetailController(itemId?: string) {
     return () => {
       active = false
     }
-  }, [item?.id, item?.source, item?.meta?.projectId])
+  }, [item?.id, item?.source, item?.meta?.projectId, runtime?.demo])
 
   const relatedLinks = useMemo(() => {
     if (!item || !links) return []

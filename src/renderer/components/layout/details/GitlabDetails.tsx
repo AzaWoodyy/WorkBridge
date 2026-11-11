@@ -1,3 +1,4 @@
+import { useRuntimeInfo } from '@renderer/data/useRuntimeInfo'
 import { Button } from '@renderer/components/ui/button'
 import { UserMultiCombobox } from '@renderer/components/ui/user-multi-combobox'
 import { useDetailController } from './useDetailController'
@@ -50,8 +51,9 @@ export function GitlabDetails({
   | 'meta'
   | 'isApproved'
 >) {
+  const { data: runtime } = useRuntimeInfo()
   return (
-    <div className="border-b border-border/60 pb-6">
+    <fieldset disabled={runtime?.demo} className="min-w-0 border-b border-border/60 pb-6">
       <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         GitLab details
       </div>
@@ -247,6 +249,6 @@ export function GitlabDetails({
           ))}
         </div>
       ) : null}
-    </div>
+    </fieldset>
   )
 }

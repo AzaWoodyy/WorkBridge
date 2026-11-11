@@ -1,3 +1,4 @@
+import { useRuntimeInfo } from '@renderer/data/useRuntimeInfo'
 import { Button } from '@renderer/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
 import { testNotification } from '@renderer/data/api'
@@ -7,6 +8,7 @@ import { RocketChatSettings } from './settings/RocketChatSettings'
 import { useSettingsController } from './settings/useSettingsController'
 
 export function Settings() {
+  const { data: runtime } = useRuntimeInfo()
   const {
     flushMutation,
     cadence,
@@ -55,7 +57,12 @@ export function Settings() {
           <p className="text-sm text-muted-foreground">Configure integrations and sync behavior.</p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        {runtime?.demo ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Demo mode: connection settings are disabled. No credentials are read or saved.
+          </p>
+        ) : null}
+        <fieldset disabled={runtime?.demo} className="grid gap-6 lg:grid-cols-2">
           <GitLabSettings
             connMap={connMap}
             gitlab={gitlab}
@@ -162,7 +169,7 @@ export function Settings() {
               Reset local data
             </Button>
           </div>
-        </div>
+        </fieldset>
       </div>
 
       <Dialog open={cadenceOpen} onOpenChange={setCadenceOpen}>

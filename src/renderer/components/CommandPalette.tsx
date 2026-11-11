@@ -1,4 +1,4 @@
-import { Dialog, DialogContent } from '@renderer/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@renderer/components/ui/dialog'
 import { useItems, usePlannerMutation, useTriggerSyncMutation } from '@renderer/data/useDbData'
 import { cn } from '@renderer/lib/utils'
 import { useAppStore } from '@renderer/store/appStore'
@@ -182,6 +182,7 @@ export function CommandPalette() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-xl p-0">
+        <DialogTitle className="sr-only">Search and commands</DialogTitle>
         <div className="border-b border-border/60 bg-card/70 px-5 py-4">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Command palette

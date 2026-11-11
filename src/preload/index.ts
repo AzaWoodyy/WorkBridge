@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 const api = {
+  getRuntimeInfo: () => ipcRenderer.invoke('workbridge:get-runtime-info'),
   getVersion: () => process.env.npm_package_version ?? '0.0.0',
   ping: () => 'pong',
   getItems: () => ipcRenderer.invoke('workbridge:get-items'),

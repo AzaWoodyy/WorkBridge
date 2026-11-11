@@ -3,6 +3,7 @@
 declare global {
   interface Window {
     workbridge: {
+      getRuntimeInfo: () => Promise<{ demo: boolean }>
       getVersion: () => string
       ping: () => string
       getItems: () => Promise<unknown[]>

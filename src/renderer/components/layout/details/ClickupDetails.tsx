@@ -1,3 +1,4 @@
+import { useRuntimeInfo } from '@renderer/data/useRuntimeInfo'
 import { Button } from '@renderer/components/ui/button'
 import { useDetailController } from './useDetailController'
 
@@ -13,8 +14,9 @@ export function ClickupDetails({
   },
   'items' | 'clickupCommentMutation' | 'item' | 'clickupComment' | 'setClickupComment' | 'meta'
 >) {
+  const { data: runtime } = useRuntimeInfo()
   return (
-    <div className="border-b border-border/60 pb-6">
+    <fieldset disabled={runtime?.demo} className="min-w-0 border-b border-border/60 pb-6">
       <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         ClickUp details
       </div>
@@ -120,6 +122,6 @@ export function ClickupDetails({
           Post comment
         </Button>
       </div>
-    </div>
+    </fieldset>
   )
 }

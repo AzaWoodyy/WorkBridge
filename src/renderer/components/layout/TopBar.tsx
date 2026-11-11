@@ -1,3 +1,4 @@
+import { useRuntimeInfo } from '@renderer/data/useRuntimeInfo'
 import { DotFilledIcon, MagnifyingGlassIcon, MoonIcon, SunIcon } from '@radix-ui/react-icons'
 import { Button } from '@renderer/components/ui/button'
 import { useSyncStatus, useTriggerSyncMutation } from '@renderer/data/useDbData'
@@ -5,6 +6,7 @@ import { cn } from '@renderer/lib/utils'
 import { useAppStore } from '@renderer/store/appStore'
 
 export function TopBar() {
+  const { data: runtime } = useRuntimeInfo()
   const theme = useAppStore((state) => state.theme)
   const setTheme = useAppStore((state) => state.setTheme)
   const setCommandOpen = useAppStore((state) => state.setCommandOpen)
@@ -35,7 +37,7 @@ export function TopBar() {
       <div className="flex items-center gap-4">
         <div className="rounded-xl border border-border/60 bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
           <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <span>Sync:</span>
+            <span>{runtime?.demo ? 'Demo · offline' : 'Sync:'}</span>
             <span
               className={cn(
                 'rounded-full px-2 py-0.5 text-[11px] font-medium',
@@ -94,6 +96,7 @@ export function TopBar() {
                 triggerSync.mutate('rocketchat')
               }}
               className="h-7 px-2 text-[11px]"
+              disabled={runtime?.demo}
             >
               Sync now
             </Button>
@@ -104,6 +107,7 @@ export function TopBar() {
           size="icon"
           onClick={() => setTheme(nextTheme)}
           aria-label="Toggle theme"
+          className="shrink-0"
         >
           {theme === 'dark' ? <SunIcon /> : theme === 'oled' ? <DotFilledIcon /> : <MoonIcon />}
         </Button>

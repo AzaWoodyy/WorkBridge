@@ -17,6 +17,7 @@ export function seedDemo() {
       meta: {
         iid: 42,
         projectId: 1,
+        state: 'opened',
         sourceBranch: 'feat/keyboard',
         targetBranch: 'main',
         author: 'Alex',
@@ -63,7 +64,7 @@ export function seedDemo() {
       status: 'opened',
       lane: 'inbox',
       project: 'Orbit / Web',
-      meta: { iid: 43, projectId: 1, author: 'Sam', labels: ['UX'] }
+      meta: { state: 'opened', iid: 43, projectId: 1, author: 'Sam', labels: ['UX'] }
     }
   ]
   for (const item of samples) {
