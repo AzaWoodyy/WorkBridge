@@ -97,4 +97,3 @@
         json_object('lane', OLD.lane, 'priority', OLD.priority, 'pinned', OLD.pinned)
       );
     END;
-  
