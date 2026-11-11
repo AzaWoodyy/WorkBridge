@@ -14,7 +14,8 @@
     "postinstall": "electron-builder install-app-deps",
     "lint": "echo \"Add linting later\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:reliability": "node --test tests/gitlab-reliability.test.mjs"
+    "test:reliability": "node --test tests/gitlab-reliability.test.mjs",
+    "demo": "WORKBRIDGE_DEMO=1 env -u ELECTRON_RUN_AS_NODE electron-vite dev"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",

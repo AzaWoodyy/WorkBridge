@@ -1,3 +1,5 @@
+import { demoDirectory, isDemo } from './runtime'
+import { seedDemo } from './db/demo'
 import { openExternalUrl } from './security'
 import path from 'node:path'
 import { app, BrowserWindow, nativeImage, nativeTheme } from 'electron'
@@ -5,6 +7,8 @@ import { fileURLToPath } from 'node:url'
 import { ensureSchema } from './db/init'
 import { registerIpc } from './ipc'
 import { startSyncLoop } from './sync'
+
+if (demoDirectory) app.setPath('userData', demoDirectory)
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const iconPath = path.join(__dirname, '../../build/icon.png')
@@ -26,7 +30,7 @@ const createWindow = () => {
     }
   })
 
-  win.setTitle('WorkBridge')
+  win.setTitle(isDemo ? 'WorkBridge — Demo' : 'WorkBridge')
   win.webContents.setWindowOpenHandler(({ url }) => {
     void openExternalUrl(url).catch(() => {})
     return { action: 'deny' }
@@ -61,6 +65,7 @@ app.whenReady().then(async () => {
   app.setName('WorkBridge')
   nativeTheme.themeSource = 'system'
   ensureSchema()
+  if (isDemo) seedDemo()
   registerIpc()
   startSyncLoop()
   if (process.platform === 'darwin') {

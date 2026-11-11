@@ -1,5 +1,6 @@
 import { openExternalUrl } from './security'
-import { createRequire } from 'node:module'
+import { credentials as keytar } from './credentials'
+import { isDemo } from './runtime'
 import { randomUUID } from 'node:crypto'
 import { ipcMain, Notification, BrowserWindow } from 'electron'
 import { db } from './db/db'
@@ -30,8 +31,7 @@ import { addClickUpTaskComment, listClickUpCustomFieldOptions, listClickUpLists 
 import { listRocketChatRooms, postRocketChatThreadReply, reactRocketChatMessage } from './integrations/rocketchat'
 
 const SERVICE_NAME = 'WorkBridge'
-const require = createRequire(import.meta.url)
-const keytar = require('keytar') as typeof import('keytar')
+
 
 export type PlannerUpdate = {
   itemId: string
@@ -74,20 +74,28 @@ const getRocketChatAuth = async () => {
   return { baseUrl: connection.baseUrl, token, userId }
 }
 
+const demoBlocked = /workbridge:(store-token|save-connection|test-connection|list-|gitlab-(add|update|approve|unapprove)|clickup-add|rocketchat-(thread|react)|trigger-sync)/
+const handle: typeof ipcMain.handle = (channel, listener) => {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (isDemo && demoBlocked.test(channel)) throw new Error('Remote connections are disabled in demo mode.')
+    return listener(event, ...args)
+  })
+}
+
 export function registerIpc() {
-  ipcMain.handle('workbridge:get-items', () => {
+  handle('workbridge:get-items', () => {
     return db.select().from(externalItems).all()
   })
 
-  ipcMain.handle('workbridge:get-links', () => {
+  handle('workbridge:get-links', () => {
     return db.select().from(links).all()
   })
 
-  ipcMain.handle('workbridge:get-planner', () => {
+  handle('workbridge:get-planner', () => {
     return db.select().from(plannerState).all()
   })
 
-  ipcMain.handle('workbridge:upsert-planner', (_event, payload: PlannerUpdate) => {
+  handle('workbridge:upsert-planner', (_event, payload: PlannerUpdate) => {
     const now = new Date().toISOString()
     const existing = db
       .select()
@@ -124,7 +132,7 @@ export function registerIpc() {
     return { ok: true }
   })
 
-  ipcMain.handle('workbridge:get-connections', async () => {
+  handle('workbridge:get-connections', async () => {
     const rows = db.select().from(syncConnections).all()
     const withTokens = await Promise.all(
       rows.map(async (row) => ({
@@ -136,7 +144,7 @@ export function registerIpc() {
     return withTokens
   })
 
-  ipcMain.handle('workbridge:save-connection', (_event, payload: ConnectionPayload) => {
+  handle('workbridge:save-connection', (_event, payload: ConnectionPayload) => {
     const id = `conn-${payload.source}`
     db.insert(syncConnections)
       .values({
@@ -163,12 +171,12 @@ export function registerIpc() {
     return { ok: true }
   })
 
-  ipcMain.handle('workbridge:store-token', async (_event, source: string, token: string) => {
+  handle('workbridge:store-token', async (_event, source: string, token: string) => {
     await keytar.setPassword(SERVICE_NAME, source, token)
     return { ok: true }
   })
 
-  ipcMain.handle(
+  handle(
     'workbridge:test-connection',
     async (_event, payload: { source: string; baseUrl?: string; token?: string; userId?: string }) => {
       try {
@@ -202,7 +210,7 @@ export function registerIpc() {
     }
   )
 
-  ipcMain.handle('workbridge:test-notification', async () => {
+  handle('workbridge:test-notification', async () => {
     if (!Notification.isSupported()) {
       return { ok: false, message: 'Notifications are not supported on this system.' }
     }
@@ -215,14 +223,14 @@ export function registerIpc() {
     return { ok: true }
   })
 
-  ipcMain.handle('workbridge:open-devtools', () => {
+  handle('workbridge:open-devtools', () => {
     const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
     if (!win) return { ok: false }
     win.webContents.openDevTools({ mode: 'detach' })
     return { ok: true }
   })
 
-  ipcMain.handle('workbridge:list-gitlab-projects', async () => {
+  handle('workbridge:list-gitlab-projects', async () => {
     try {
       const { baseUrl, token } = await getGitLabAuth()
       const projects = await listGitLabProjects(baseUrl, token)
@@ -233,7 +241,7 @@ export function registerIpc() {
     }
   })
 
-  ipcMain.handle('workbridge:list-gitlab-groups', async () => {
+  handle('workbridge:list-gitlab-groups', async () => {
     try {
       const { baseUrl, token } = await getGitLabAuth()
       const groups = await listGitLabGroups(baseUrl, token)
@@ -244,7 +252,7 @@ export function registerIpc() {
     }
   })
 
-  ipcMain.handle('workbridge:list-gitlab-members', async (_event, projectId: number) => {
+  handle('workbridge:list-gitlab-members', async (_event, projectId: number) => {
     try {
       const { baseUrl, token } = await getGitLabAuth()
       const members = await listGitLabMembers(baseUrl, token, projectId)
@@ -255,7 +263,7 @@ export function registerIpc() {
     }
   })
 
-  ipcMain.handle('workbridge:list-clickup-lists', async () => {
+  handle('workbridge:list-clickup-lists', async () => {
     try {
       const { token } = await getClickUpAuth()
       const lists = await listClickUpLists(token)
@@ -266,7 +274,7 @@ export function registerIpc() {
     }
   })
 
-  ipcMain.handle('workbridge:list-clickup-custom-field-options', async (_event, listId: string, field: string) => {
+  handle('workbridge:list-clickup-custom-field-options', async (_event, listId: string, field: string) => {
     try {
       const { token } = await getClickUpAuth()
       const options = await listClickUpCustomFieldOptions(token, listId, field)
@@ -277,7 +285,7 @@ export function registerIpc() {
     }
   })
 
-  ipcMain.handle('workbridge:list-rocketchat-rooms', async () => {
+  handle('workbridge:list-rocketchat-rooms', async () => {
     try {
       const { baseUrl, token, userId } = await getRocketChatAuth()
       const rooms = await listRocketChatRooms(baseUrl, token, userId)
@@ -288,15 +296,15 @@ export function registerIpc() {
     }
   })
 
-  ipcMain.handle('workbridge:get-sync-status', () => {
+  handle('workbridge:get-sync-status', () => {
     return getSyncState()
   })
 
-  ipcMain.handle('workbridge:get-sync-cadence', () => {
+  handle('workbridge:get-sync-cadence', () => {
     return { minutes: getSyncCadence() }
   })
 
-  ipcMain.handle('workbridge:get-gitlab-diagnostics', () => {
+  handle('workbridge:get-gitlab-diagnostics', () => {
     const gitlabItems = db.select().from(externalItems).where(eq(externalItems.source, 'gitlab')).all()
     const plannerRows = db.select().from(plannerState).all()
     const linkRows = db.select().from(links).all()
@@ -359,12 +367,12 @@ export function registerIpc() {
     }
   })
 
-  ipcMain.handle('workbridge:set-sync-cadence', (_event, minutes: number) => {
+  handle('workbridge:set-sync-cadence', (_event, minutes: number) => {
     const value = setSyncCadence(minutes)
     return { minutes: value }
   })
 
-  ipcMain.handle('workbridge:trigger-sync', async (_event, source: string) => {
+  handle('workbridge:trigger-sync', async (_event, source: string) => {
     if (source === 'gitlab') {
       await syncGitLabNow({ full: true, trigger: 'manual' })
       return { ok: true }
@@ -380,7 +388,7 @@ export function registerIpc() {
     return { ok: false }
   })
 
-  ipcMain.handle('workbridge:flush-all', async () => {
+  handle('workbridge:flush-all', async () => {
     db.delete(links).run()
     db.delete(plannerState).run()
     db.delete(externalItems).run()
@@ -397,13 +405,13 @@ export function registerIpc() {
     return { ok: true }
   })
 
-  ipcMain.handle('workbridge:open-external', async (_event, url: string) => {
+  handle('workbridge:open-external', async (_event, url: string) => {
     if (!url) return { ok: false }
     await openExternalUrl(url)
     return { ok: true }
   })
 
-  ipcMain.handle(
+  handle(
     'workbridge:create-link',
     async (_event, payload: { fromId: string; toId: string; relationType: string; origin: 'manual' | 'auto'; suggested: boolean }) => {
       const existing = db
@@ -432,7 +440,7 @@ export function registerIpc() {
     }
   )
 
-  ipcMain.handle('workbridge:confirm-link', async (_event, linkId: string) => {
+  handle('workbridge:confirm-link', async (_event, linkId: string) => {
     db.update(links)
       .set({ suggested: false, confirmedAt: new Date().toISOString() })
       .where(eq(links.id, linkId))
@@ -440,7 +448,7 @@ export function registerIpc() {
     return { ok: true }
   })
 
-  ipcMain.handle(
+  handle(
     'workbridge:gitlab-add-note',
     async (_event, payload: { projectId: number; iid: number; body: string }) => {
       const { baseUrl, token } = await getGitLabAuth()
@@ -450,7 +458,7 @@ export function registerIpc() {
     }
   )
 
-  ipcMain.handle(
+  handle(
     'workbridge:clickup-add-comment',
     async (_event, payload: { taskId: string; body: string }) => {
       const { token } = await getClickUpAuth()
@@ -460,7 +468,7 @@ export function registerIpc() {
     }
   )
 
-  ipcMain.handle(
+  handle(
     'workbridge:rocketchat-thread-reply',
     async (_event, payload: { roomId: string; threadId: string; body: string }) => {
       const { baseUrl, token, userId } = await getRocketChatAuth()
@@ -470,7 +478,7 @@ export function registerIpc() {
     }
   )
 
-  ipcMain.handle(
+  handle(
     'workbridge:rocketchat-react',
     async (_event, payload: { messageId: string; emoji: string; shouldReact?: boolean }) => {
       const { baseUrl, token, userId } = await getRocketChatAuth()
@@ -487,7 +495,7 @@ export function registerIpc() {
     }
   )
 
-  ipcMain.handle(
+  handle(
     'workbridge:gitlab-update-labels',
     async (_event, payload: { projectId: number; iid: number; labels: string[] }) => {
       const { baseUrl, token } = await getGitLabAuth()
@@ -497,7 +505,7 @@ export function registerIpc() {
     }
   )
 
-  ipcMain.handle(
+  handle(
     'workbridge:gitlab-update-reviewers',
     async (_event, payload: { projectId: number; iid: number; assignees: string[]; reviewers: string[] }) => {
       const { baseUrl, token } = await getGitLabAuth()
@@ -514,7 +522,7 @@ export function registerIpc() {
     }
   )
 
-  ipcMain.handle(
+  handle(
     'workbridge:gitlab-approve',
     async (_event, payload: { projectId: number; iid: number }) => {
       const { baseUrl, token } = await getGitLabAuth()
@@ -524,7 +532,7 @@ export function registerIpc() {
     }
   )
 
-  ipcMain.handle(
+  handle(
     'workbridge:gitlab-unapprove',
     async (_event, payload: { projectId: number; iid: number }) => {
       const { baseUrl, token } = await getGitLabAuth()

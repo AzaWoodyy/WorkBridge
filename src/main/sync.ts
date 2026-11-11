@@ -1,4 +1,5 @@
-import { createRequire } from 'node:module'
+import { credentials as keytar } from './credentials'
+import { isDemo } from './runtime'
 import { db } from './db/db'
 import { externalItems, plannerState, syncConnections, syncCursors } from './db/schema'
 import { eq } from 'drizzle-orm'
@@ -6,8 +7,7 @@ import { syncGitLab } from './integrations/gitlab'
 import { syncClickUp } from './integrations/clickup'
 import { syncRocketChat } from './integrations/rocketchat'
 
-const require = createRequire(import.meta.url)
-const keytar = require('keytar') as typeof import('keytar')
+
 
 type SyncState = {
   source: string
@@ -78,6 +78,7 @@ export const setSyncCadence = (minutes: number) => {
 export const getSyncCadence = () => getPollMinutes()
 
 const scheduleSyncLoop = () => {
+  if (isDemo) return
   const minutes = getPollMinutes()
   pollInterval = setInterval(() => {
     syncGitLabNow({ full: false, trigger: 'poll' })
@@ -146,6 +147,7 @@ const getGitLabConfig = async (full: boolean) => {
 }
 
 export async function syncGitLabNow(options?: { full?: boolean; trigger?: GitLabSyncTrigger }) {
+  if (isDemo) return
   if (gitlabSyncInFlight) {
     return gitlabSyncInFlight
   }
@@ -250,6 +252,7 @@ const getRocketChatConfig = async () => {
 }
 
 export async function syncClickUpNow() {
+  if (isDemo) return
   updateState('clickup', { status: 'syncing', lastError: null })
   try {
     const { config, error } = await getClickUpConfig()
@@ -286,6 +289,7 @@ export async function syncClickUpNow() {
 }
 
 export async function syncRocketChatNow() {
+  if (isDemo) return
   updateState('rocketchat', { status: 'syncing', lastError: null })
   try {
     const { config, error } = await getRocketChatConfig()
@@ -322,6 +326,7 @@ export async function syncRocketChatNow() {
 }
 
 export function startSyncLoop() {
+  if (isDemo) return
   // Startup guardrail: persisted external items must remain visible before fresh sync completes.
   ensurePlannerRowsForSource('gitlab')
   ensurePlannerRowsForSource('clickup')
