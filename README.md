@@ -1,3 +1,5 @@
+[![CI](https://github.com/AzaWoodyy/WorkBridge/actions/workflows/ci.yml/badge.svg)](https://github.com/AzaWoodyy/WorkBridge/actions/workflows/ci.yml)
+
 # WorkBridge
 
 WorkBridge is a local-first desktop app that unifies planning across GitLab, ClickUp, and Rocket.Chat.
