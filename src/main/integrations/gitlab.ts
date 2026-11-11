@@ -416,7 +416,7 @@ export async function syncGitLab(
       .onConflictDoNothing()
       .run()
 
-    const haystack = `${mr.title}\\n${mr.description ?? ''}\\n${mr.source_branch ?? ''}`
+    const haystack = `${mr.title}\n${mr.description ?? ''}\n${mr.source_branch ?? ''}`
     suggestLinksForMr(itemId, haystack)
   })
 

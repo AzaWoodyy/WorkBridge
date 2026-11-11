@@ -206,7 +206,7 @@ async function fetchTasksForTeam(
 const normalizeStatus = (value: string) =>
   value
     .normalize('NFD')
-    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
 
@@ -215,7 +215,7 @@ const allowedStatuses = new Set(CLICKUP_STATUS_FILTERS.map((status) => normalize
 const normalizeName = (value: string) =>
   value
     .normalize('NFD')
-    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
 
@@ -444,7 +444,7 @@ function suggestLinksFromGitLab() {
 
   for (const mr of gitlabItems) {
     const meta = mr.rawJson ? JSON.parse(mr.rawJson) : {}
-    const haystack = `${mr.title}\\n${mr.bodySnippet ?? ''}\\n${meta.sourceBranch ?? ''}`
+    const haystack = `${mr.title}\n${mr.bodySnippet ?? ''}\n${meta.sourceBranch ?? ''}`
     const ids = extractClickUpIds(haystack)
     for (const id of ids) {
       const targetId = idToItem.get(id)

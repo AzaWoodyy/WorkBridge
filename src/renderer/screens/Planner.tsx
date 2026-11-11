@@ -64,7 +64,7 @@ export function Planner() {
                       ))}
                     </div>
                   ) : (
-                    <EmptyState title="No items" description="Drop items here when ready." />
+                    <EmptyState title="No items" description="Choose a planning lane from an item’s details." />
                   )}
                 </div>
               </div>

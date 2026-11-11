@@ -71,7 +71,8 @@
     "productName": "WorkBridge",
     "files": [
       "dist/**",
-      "package.json"
+      "package.json",
+      "build/icon.png"
     ],
     "directories": {
       "buildResources": "build"
@@ -80,7 +81,6 @@
       "category": "public.app-category.productivity",
       "icon": "build/icon.png",
       "target": "dmg"
-    },
-    "buildVersion": "0.1.6+c01473f"
+    }
   }
 }
