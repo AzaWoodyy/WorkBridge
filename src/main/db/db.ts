@@ -1,8 +1,8 @@
-import { demoDirectory } from '../runtime'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
-import path from 'node:path'
-import { createRequire } from 'node:module'
 import { app } from 'electron'
+import { createRequire } from 'node:module'
+import path from 'node:path'
+import { demoDirectory } from '../runtime'
 
 const require = createRequire(import.meta.url)
 const betterSqlite3Module = 'better-sqlite3'

@@ -34,9 +34,7 @@ declare global {
       openDevTools: () => Promise<{ ok: boolean }>
       listGitLabProjects: () => Promise<{ ok: boolean; projects: string[] }>
       listGitLabGroups: () => Promise<{ ok: boolean; groups: string[] }>
-      listGitLabMembers: (
-        projectId: number
-      ) => Promise<{
+      listGitLabMembers: (projectId: number) => Promise<{
         ok: boolean
         message?: string
         members: Array<{ id: number; username: string; name?: string | null }>

@@ -1,6 +1,6 @@
-import { db } from './db'
-import { externalItems, plannerState, links } from './schema'
 import { isDemo } from '../runtime'
+import { db } from './db'
+import { externalItems, links, plannerState } from './schema'
 
 export function seedDemo() {
   if (!isDemo) throw new Error('Demo seed requires an isolated demo profile.')

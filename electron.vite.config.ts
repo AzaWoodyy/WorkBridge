@@ -1,5 +1,5 @@
-import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+import { defineConfig } from 'electron-vite'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 

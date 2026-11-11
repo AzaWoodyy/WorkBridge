@@ -1,8 +1,8 @@
 import { DotFilledIcon, MagnifyingGlassIcon, MoonIcon, SunIcon } from '@radix-ui/react-icons'
-import { useAppStore } from '@renderer/store/appStore'
 import { Button } from '@renderer/components/ui/button'
 import { useSyncStatus, useTriggerSyncMutation } from '@renderer/data/useDbData'
 import { cn } from '@renderer/lib/utils'
+import { useAppStore } from '@renderer/store/appStore'
 
 export function TopBar() {
   const theme = useAppStore((state) => state.theme)

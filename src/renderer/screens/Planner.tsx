@@ -1,8 +1,8 @@
-import { ItemCard } from '@renderer/components/ItemCard'
 import { EmptyState } from '@renderer/components/EmptyState'
+import { ItemCard } from '@renderer/components/ItemCard'
+import type { PlannerLane } from '@renderer/data/types'
 import { useItems, useLinks, usePlanner } from '@renderer/data/useDbData'
 import { useAppStore } from '@renderer/store/appStore'
-import type { PlannerLane } from '@renderer/data/types'
 
 const lanes: { key: PlannerLane; label: string; hint: string }[] = [
   { key: 'inbox', label: 'To do', hint: 'Unplanned items' },
@@ -64,7 +64,10 @@ export function Planner() {
                       ))}
                     </div>
                   ) : (
-                    <EmptyState title="No items" description="Choose a planning lane from an item’s details." />
+                    <EmptyState
+                      title="No items"
+                      description="Choose a planning lane from an item’s details."
+                    />
                   )}
                 </div>
               </div>

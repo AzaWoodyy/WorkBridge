@@ -1,11 +1,11 @@
-import { demoDirectory, isDemo } from './runtime'
-import { seedDemo } from './db/demo'
-import { openExternalUrl } from './security'
-import path from 'node:path'
 import { app, BrowserWindow, nativeImage, nativeTheme } from 'electron'
+import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { seedDemo } from './db/demo'
 import { ensureSchema } from './db/init'
 import { registerIpc } from './ipc'
+import { demoDirectory, isDemo } from './runtime'
+import { openExternalUrl } from './security'
 import { startSyncLoop } from './sync'
 
 if (demoDirectory) app.setPath('userData', demoDirectory)

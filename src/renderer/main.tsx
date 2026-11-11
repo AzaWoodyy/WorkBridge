@@ -1,9 +1,9 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { App } from '@renderer/App'
 import { ThemeProvider } from '@renderer/components/ThemeProvider'
 import '@renderer/styles/globals.css'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 
 const queryClient = new QueryClient({
   defaultOptions: {

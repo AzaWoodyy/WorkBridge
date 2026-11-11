@@ -1,6 +1,6 @@
+import { and, eq, or } from 'drizzle-orm'
 import { db } from '../db/db'
 import { externalItems, links, plannerState, syncConnections } from '../db/schema'
-import { and, eq, or } from 'drizzle-orm'
 import { notifyOnce } from '../notifications'
 
 export type RocketChatConnection = {

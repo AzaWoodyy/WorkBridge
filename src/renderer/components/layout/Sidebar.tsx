@@ -1,6 +1,6 @@
-import { useAppStore, type ViewKey } from '@renderer/store/appStore'
-import { cn } from '@renderer/lib/utils'
 import { useConnections } from '@renderer/data/useDbData'
+import { cn } from '@renderer/lib/utils'
+import { useAppStore, type ViewKey } from '@renderer/store/appStore'
 
 const navItems: { key: ViewKey; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },

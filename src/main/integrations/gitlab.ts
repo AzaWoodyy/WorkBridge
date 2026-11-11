@@ -1,8 +1,8 @@
-import { extractClickUpIds, normalizeMergeRequest } from './normalize'
+import { and, eq, or } from 'drizzle-orm'
 import { db } from '../db/db'
-import { externalItems, plannerState, links } from '../db/schema'
-import { eq, and, or } from 'drizzle-orm'
+import { externalItems, links, plannerState } from '../db/schema'
 import { notifyOnce } from '../notifications'
+import { extractClickUpIds, normalizeMergeRequest } from './normalize'
 
 export type GitLabScope = {
   projects?: string[]

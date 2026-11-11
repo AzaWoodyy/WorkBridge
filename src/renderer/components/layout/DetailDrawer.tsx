@@ -1,34 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
-import * as joypixels from 'emoji-toolkit'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import remarkEmoji from 'remark-emoji'
-import {
-  useItems,
-  useLinks,
-  usePlanner,
-  usePlannerMutation,
-  useGitLabApproveMutation,
-  useGitLabLabelsMutation,
-  useGitLabNoteMutation,
-  useGitLabReviewersMutation,
-  useGitLabUnapproveMutation,
-  useClickUpCommentMutation,
-  useRocketChatReplyMutation,
-  useRocketChatReactMutation,
-  useCreateLinkMutation,
-  useConfirmLinkMutation
-} from '@renderer/data/useDbData'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
-import type { Link } from '@renderer/data/types'
-import type { PlannerLane } from '@renderer/data/types'
 import { SourceBadge } from '@renderer/components/SourceBadge'
 import { StatusChip } from '@renderer/components/StatusChip'
 import { Button } from '@renderer/components/ui/button'
-import { UserMultiCombobox } from '@renderer/components/ui/user-multi-combobox'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
+import type { PlannerLane } from '@renderer/data/types'
 import { cn } from '@renderer/lib/utils'
-import { useAppStore } from '@renderer/store/appStore'
-import { fetchGitLabMembers } from '@renderer/data/api'
+import ReactMarkdown from 'react-markdown'
+import remarkEmoji from 'remark-emoji'
+import remarkGfm from 'remark-gfm'
+import { ClickupDetails } from './details/ClickupDetails'
+import { GitlabDetails } from './details/GitlabDetails'
+import { RocketchatDetails } from './details/RocketchatDetails'
+import { useDetailController } from './details/useDetailController'
 
 const lanes: { key: PlannerLane; label: string }[] = [
   { key: 'inbox', label: 'Inbox' },
@@ -38,7 +20,6 @@ const lanes: { key: PlannerLane; label: string }[] = [
   { key: 'waiting', label: 'Waiting' },
   { key: 'done', label: 'Done' }
 ]
-
 export function DetailDrawer({
   open,
   itemId,
@@ -48,143 +29,59 @@ export function DetailDrawer({
   itemId?: string
   onClose: () => void
 }) {
-  const { data: items } = useItems()
-  const { data: planner } = usePlanner()
-  const { data: links } = useLinks()
-  const plannerMutation = usePlannerMutation()
-  const gitlabNoteMutation = useGitLabNoteMutation()
-  const gitlabLabelsMutation = useGitLabLabelsMutation()
-  const gitlabReviewersMutation = useGitLabReviewersMutation()
-  const gitlabApproveMutation = useGitLabApproveMutation()
-  const gitlabUnapproveMutation = useGitLabUnapproveMutation()
-  const clickupCommentMutation = useClickUpCommentMutation()
-  const rocketReplyMutation = useRocketChatReplyMutation()
-  const rocketReactMutation = useRocketChatReactMutation()
-  const createLinkMutation = useCreateLinkMutation()
-  const confirmLinkMutation = useConfirmLinkMutation()
-
-  const item = items?.find((entry) => entry.id === itemId)
-  const plannerEntry = planner?.find((entry) => entry.itemId === itemId)
-  const [note, setNote] = useState('')
-  const [mrComment, setMrComment] = useState('')
-  const [mrLabels, setMrLabels] = useState('')
-  const [mrAssignees, setMrAssignees] = useState<string[]>([])
-  const [mrReviewers, setMrReviewers] = useState<string[]>([])
-  const [clickupComment, setClickupComment] = useState('')
-  const [rocketReply, setRocketReply] = useState('')
-  const [rocketEmoji, setRocketEmoji] = useState('')
-  const [gitlabMembers, setGitlabMembers] = useState<Array<{ value: string; label?: string }>>([])
-  const [gitlabMembersLoading, setGitlabMembersLoading] = useState(false)
-  const [gitlabMembersError, setGitlabMembersError] = useState<string | null>(null)
-
-  const rocketQuickReactions = [':eyes:', ':ping_pong:', ':white_check_mark:', ':hourglass:']
-  const displayRocketEmoji = (value: string) => {
-    if (!value) return value
-    const normalized = value.startsWith(':')
-      ? value
-      : value.length > 2
-        ? `:${value.replace(/:/g, '')}:`
-        : value
-    const converted = joypixels.shortnameToUnicode(normalized)
-    return converted || value
-  }
-  const normalizeRocketEmoji = (value: string) => {
-    if (!value) return value
-    if (value.startsWith(':') && value.endsWith(':')) return value
-    const short = joypixels.toShort(value)
-    const match = short.match(/:[a-z0-9_+-]+:/i)
-    if (match) return match[0]
-    if (value.startsWith(':')) return value
-    if (value.length > 2) return `:${value.replace(/:/g, '')}:`
-    return value
-  }
-  const linkOpen = useAppStore((state) => state.linkModalOpen)
-  const setLinkOpen = useAppStore((state) => state.setLinkModalOpen)
-  const [linkSearch, setLinkSearch] = useState('')
-  const [linkRelation, setLinkRelation] = useState('relates_to')
-  const [linkTargetId, setLinkTargetId] = useState<string | null>(null)
-
-  useEffect(() => {
-    setNote(plannerEntry?.personalNote ?? '')
-  }, [plannerEntry?.personalNote])
-
-  useEffect(() => {
-    if (!item) return
-    const metaLabels = (item.meta?.labels ?? []) as string[]
-    const metaAssignees = (item.meta?.assignees ?? []) as string[]
-    const metaReviewers = (item.meta?.reviewers ?? []) as string[]
-    setMrLabels(metaLabels.join(', '))
-    setMrAssignees(metaAssignees)
-    setMrReviewers(metaReviewers)
-  }, [item])
-
-  useEffect(() => {
-    const projectId = item?.source === 'gitlab' ? item.meta?.projectId : null
-    if (!projectId) {
-      setGitlabMembers([])
-      return
-    }
-    let active = true
-    setGitlabMembersLoading(true)
-    setGitlabMembersError(null)
-    fetchGitLabMembers(projectId)
-      .then((response) => {
-        if (!active) return
-        if (!response?.ok) {
-          setGitlabMembers([])
-          setGitlabMembersError(response?.message ?? 'Failed to load members.')
-          return
-        }
-        const options = (response.members ?? []).map((member) => ({
-          value: member.username,
-          label: member.name ? `${member.name} (@${member.username})` : `@${member.username}`
-        }))
-        setGitlabMembers(options)
-      })
-      .catch((error) => {
-        if (!active) return
-        setGitlabMembers([])
-        setGitlabMembersError(error instanceof Error ? error.message : 'Failed to load members.')
-      })
-      .finally(() => {
-        if (!active) return
-        setGitlabMembersLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [item?.id, item?.source, item?.meta?.projectId])
-
-  const relatedLinks = useMemo(() => {
-    if (!item || !links) return []
-    return links.filter(
-      (link) => link.fromItemId === item.id || link.toItemId === item.id
-    ) as Link[]
-  }, [item, links])
-
-  const relatedItems = useMemo(() => {
-    if (!item || !links || !items) return []
-    const relatedIds = relatedLinks.map((link) =>
-      link.fromItemId === item.id ? link.toItemId : link.fromItemId
-    )
-    return items.filter((entry) => relatedIds.includes(entry.id))
-  }, [item, links, items, relatedLinks])
-
-  const relatedMessages = useMemo(
-    () => relatedItems.filter((entry) => entry.source === 'rocketchat'),
-    [relatedItems]
-  )
-
-  const linkCandidates = useMemo(() => {
-    if (!item || !items) return []
-    return items
-      .filter((entry) => entry.id !== item.id)
-      .filter((entry) =>
-        item.source === 'gitlab' ? entry.source === 'clickup' : entry.source === 'gitlab'
-      )
-      .filter((entry) => entry.title.toLowerCase().includes(linkSearch.toLowerCase()))
-  }, [item, items, linkSearch])
-
+  const {
+    items,
+    plannerMutation,
+    gitlabNoteMutation,
+    gitlabLabelsMutation,
+    gitlabReviewersMutation,
+    gitlabApproveMutation,
+    gitlabUnapproveMutation,
+    clickupCommentMutation,
+    rocketReplyMutation,
+    rocketReactMutation,
+    createLinkMutation,
+    confirmLinkMutation,
+    item,
+    plannerEntry,
+    note,
+    setNote,
+    mrComment,
+    setMrComment,
+    mrLabels,
+    setMrLabels,
+    mrAssignees,
+    setMrAssignees,
+    mrReviewers,
+    setMrReviewers,
+    clickupComment,
+    setClickupComment,
+    rocketReply,
+    setRocketReply,
+    rocketEmoji,
+    setRocketEmoji,
+    gitlabMembers,
+    gitlabMembersLoading,
+    gitlabMembersError,
+    rocketQuickReactions,
+    displayRocketEmoji,
+    normalizeRocketEmoji,
+    linkOpen,
+    setLinkOpen,
+    linkSearch,
+    setLinkSearch,
+    linkRelation,
+    setLinkRelation,
+    linkTargetId,
+    setLinkTargetId,
+    relatedLinks,
+    relatedItems,
+    relatedMessages,
+    linkCandidates,
+    meta,
+    isApproved,
+    titleText
+  } = useDetailController(itemId)
   if (!open || !item) {
     return (
       <aside
@@ -203,11 +100,6 @@ export function DetailDrawer({
       </aside>
     )
   }
-
-  const meta = item?.meta ?? {}
-  const isApproved = Boolean(meta.approvals?.approved)
-  const titleText = item.title.replace(/\s*\n\s*/g, ' ')
-
   return (
     <aside
       className={cn(
@@ -293,455 +185,58 @@ export function DetailDrawer({
         </div>
 
         {item.source === 'gitlab' ? (
-          <div className="border-b border-border/60 pb-6">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              GitLab details
-            </div>
-            <div className="mt-3 grid gap-2 text-sm">
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">State</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title={meta.state ?? item.status}
-                >
-                  {meta.state ?? item.status}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Draft</span>
-                <span className="font-medium text-foreground text-right">
-                  {meta.draft ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Approved</span>
-                <span className="font-medium text-foreground text-right">
-                  {isApproved ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Pipeline</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title={meta.pipelineStatus ?? 'Unknown'}
-                >
-                  {meta.pipelineStatus ?? 'Unknown'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Reviewers</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 break-words line-clamp-2"
-                  title={(meta.reviewers ?? []).join(', ') || 'None'}
-                >
-                  {(meta.reviewers ?? []).join(', ') || 'None'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Assignees</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 break-words line-clamp-2"
-                  title={(meta.assignees ?? []).join(', ') || 'None'}
-                >
-                  {(meta.assignees ?? []).join(', ') || 'None'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Approvals</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title="Approvals"
-                >
-                  {meta.approvals
-                    ? `${meta.approvals.approvedBy?.length ?? 0} approved · ${meta.approvals.approvalsLeft ?? '?'} left`
-                    : 'Not available'}
-                </span>
-              </div>
-            </div>
-            <div className="mt-5 grid gap-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Actions
-              </div>
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Add comment</span>
-                <textarea
-                  className="min-h-[80px] w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  value={mrComment}
-                  onChange={(event) => setMrComment(event.target.value)}
-                  placeholder="Leave a note on this MR..."
-                />
-              </label>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  if (!mrComment.trim()) return
-                  gitlabNoteMutation.mutate({
-                    projectId: meta.projectId,
-                    iid: meta.iid,
-                    body: mrComment
-                  })
-                  setMrComment('')
-                }}
-              >
-                Post comment
-              </Button>
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Labels (comma separated)</span>
-                <input
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  value={mrLabels}
-                  onChange={(event) => setMrLabels(event.target.value)}
-                />
-              </label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  gitlabLabelsMutation.mutate({
-                    projectId: meta.projectId,
-                    iid: meta.iid,
-                    labels: mrLabels
-                      .split(',')
-                      .map((entry) => entry.trim())
-                      .filter(Boolean)
-                  })
-                }
-              >
-                Update labels
-              </Button>
-              <div className="space-y-1">
-                <span className="text-xs text-muted-foreground">Assignees</span>
-                <UserMultiCombobox
-                  options={gitlabMembers}
-                  selected={mrAssignees}
-                  onChange={setMrAssignees}
-                  placeholder={gitlabMembersLoading ? 'Loading members…' : 'Select assignees'}
-                  disabled={gitlabMembersLoading || gitlabMembers.length === 0}
-                />
-                {gitlabMembersError ? (
-                  <div className="text-xs text-rose-500">{gitlabMembersError}</div>
-                ) : null}
-              </div>
-              <div className="space-y-1">
-                <span className="text-xs text-muted-foreground">Reviewers</span>
-                <UserMultiCombobox
-                  options={gitlabMembers}
-                  selected={mrReviewers}
-                  onChange={setMrReviewers}
-                  placeholder={gitlabMembersLoading ? 'Loading members…' : 'Select reviewers'}
-                  disabled={gitlabMembersLoading || gitlabMembers.length === 0}
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  gitlabReviewersMutation.mutate({
-                    projectId: meta.projectId,
-                    iid: meta.iid,
-                    assignees: mrAssignees,
-                    reviewers: mrReviewers
-                  })
-                }
-              >
-                Update assignees & reviewers
-              </Button>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() =>
-                    gitlabApproveMutation.mutate({ projectId: meta.projectId, iid: meta.iid })
-                  }
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    gitlabUnapproveMutation.mutate({ projectId: meta.projectId, iid: meta.iid })
-                  }
-                >
-                  Unapprove
-                </Button>
-              </div>
-            </div>
-            {relatedMessages.length ? (
-              <div className="mt-6 space-y-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Linked messages
-                </div>
-                {relatedMessages.map((message) => (
-                  <div key={message.id} className="rounded-lg border border-border/60 p-3 text-sm">
-                    <div className="text-xs text-muted-foreground">
-                      {message.meta?.author ? `@${message.meta.author}` : 'Rocket.Chat'} •{' '}
-                      {message.projectOrRoom}
-                    </div>
-                    <div
-                      className="mt-2 text-sm text-foreground break-words line-clamp-3"
-                      title={message.snippet}
-                    >
-                      {message.snippet}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          <GitlabDetails
+            items={items}
+            gitlabNoteMutation={gitlabNoteMutation}
+            gitlabLabelsMutation={gitlabLabelsMutation}
+            gitlabReviewersMutation={gitlabReviewersMutation}
+            gitlabApproveMutation={gitlabApproveMutation}
+            gitlabUnapproveMutation={gitlabUnapproveMutation}
+            item={item}
+            note={note}
+            mrComment={mrComment}
+            setMrComment={setMrComment}
+            mrLabels={mrLabels}
+            setMrLabels={setMrLabels}
+            mrAssignees={mrAssignees}
+            setMrAssignees={setMrAssignees}
+            mrReviewers={mrReviewers}
+            setMrReviewers={setMrReviewers}
+            gitlabMembers={gitlabMembers}
+            gitlabMembersLoading={gitlabMembersLoading}
+            gitlabMembersError={gitlabMembersError}
+            relatedMessages={relatedMessages}
+            meta={meta}
+            isApproved={isApproved}
+          />
         ) : null}
 
         {item.source === 'clickup' ? (
-          <div className="border-b border-border/60 pb-6">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              ClickUp details
-            </div>
-            <div className="mt-3 grid gap-2 text-sm">
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Status</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title={meta.status ?? item.status}
-                >
-                  {meta.status ?? item.status}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Priority</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title={meta.priority ?? 'None'}
-                >
-                  {meta.priority ?? 'None'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Assignees</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 break-words line-clamp-2"
-                  title={(meta.assignees ?? []).join(', ') || 'Unassigned'}
-                >
-                  {(meta.assignees ?? []).join(', ') || 'Unassigned'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">List</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title={meta.listName ?? 'Unknown'}
-                >
-                  {meta.listName ?? 'Unknown'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Folder</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title={meta.folderName ?? '—'}
-                >
-                  {meta.folderName ?? '—'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Space</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title={meta.spaceName ?? '—'}
-                >
-                  {meta.spaceName ?? '—'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Custom field</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title={meta.customField ?? meta.equipe ?? '—'}
-                >
-                  {meta.customField ?? meta.equipe ?? '—'}
-                </span>
-              </div>
-              {item.dueAt ? (
-                <div className="flex items-start justify-between gap-3 min-w-0">
-                  <span className="text-muted-foreground">Due</span>
-                  <span
-                    className="font-medium text-foreground text-right min-w-0 truncate"
-                    title={new Date(item.dueAt).toLocaleString()}
-                  >
-                    {new Date(item.dueAt).toLocaleString()}
-                  </span>
-                </div>
-              ) : null}
-            </div>
-            <div className="mt-5 grid gap-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Actions
-              </div>
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Add comment</span>
-                <textarea
-                  className="min-h-[80px] w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  value={clickupComment}
-                  onChange={(event) => setClickupComment(event.target.value)}
-                  placeholder="Leave a comment on this task..."
-                />
-              </label>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  if (!clickupComment.trim()) return
-                  const taskId = item.id.replace('cu-task-', '')
-                  clickupCommentMutation.mutate({ taskId, body: clickupComment })
-                  setClickupComment('')
-                }}
-              >
-                Post comment
-              </Button>
-            </div>
-          </div>
+          <ClickupDetails
+            items={items}
+            clickupCommentMutation={clickupCommentMutation}
+            item={item}
+            clickupComment={clickupComment}
+            setClickupComment={setClickupComment}
+            meta={meta}
+          />
         ) : null}
 
         {item.source === 'rocketchat' ? (
-          <div className="border-b border-border/60 pb-6">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Rocket.Chat details
-            </div>
-            <div className="mt-3 grid gap-2 text-sm">
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Room</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title={item.projectOrRoom}
-                >
-                  {item.projectOrRoom}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Author</span>
-                <span
-                  className="font-medium text-foreground text-right min-w-0 truncate"
-                  title={meta.author ?? 'Unknown'}
-                >
-                  {meta.author ?? 'Unknown'}
-                </span>
-              </div>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <span className="text-muted-foreground">Review request</span>
-                <span className="font-medium text-foreground text-right">
-                  {meta.reviewRequest ? 'Yes' : 'No'}
-                </span>
-              </div>
-            </div>
-            <div className="mt-5 grid gap-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Actions
-              </div>
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Reply in thread</span>
-                <textarea
-                  className="min-h-[80px] w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  value={rocketReply}
-                  onChange={(event) => setRocketReply(event.target.value)}
-                  placeholder="Write a threaded reply..."
-                />
-              </label>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  if (!rocketReply.trim()) return
-                  const messageId = item.id.replace('rc-msg-', '')
-                  const roomId = meta.roomId
-                  if (!roomId) return
-                  rocketReplyMutation.mutate({ roomId, threadId: messageId, body: rocketReply })
-                  setRocketReply('')
-                }}
-              >
-                Post reply
-              </Button>
-              <div className="space-y-2">
-                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Quick reactions
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {rocketQuickReactions.map((emoji) => (
-                    <button
-                      key={emoji}
-                      className="rounded-full border border-border/70 bg-muted/30 px-3 py-1 text-lg transition hover:bg-muted"
-                      onClick={() => {
-                        const messageId = item.id.replace('rc-msg-', '')
-                        rocketReactMutation.mutate({ messageId, emoji, shouldReact: true })
-                      }}
-                    >
-                      {displayRocketEmoji(emoji)}
-                    </button>
-                  ))}
-                </div>
-                <label className="space-y-1">
-                  <span className="text-xs text-muted-foreground">Custom reaction</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                      value={rocketEmoji}
-                      onChange={(event) => setRocketEmoji(event.target.value)}
-                      placeholder=":eyes: or 👀"
-                    />
-                    <span className="text-lg">
-                      {rocketEmoji ? displayRocketEmoji(normalizeRocketEmoji(rocketEmoji)) : '✨'}
-                    </span>
-                  </div>
-                </label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (!rocketEmoji.trim()) return
-                    const messageId = item.id.replace('rc-msg-', '')
-                    const normalized = normalizeRocketEmoji(rocketEmoji)
-                    rocketReactMutation.mutate({ messageId, emoji: normalized, shouldReact: true })
-                    setRocketEmoji('')
-                  }}
-                >
-                  Add reaction
-                </Button>
-              </div>
-              {meta.reactions ? (
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Reactions
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(
-                      meta.reactions as Record<string, { count?: number; usernames?: string[] }>
-                    ).map(([emoji, data]) => (
-                      <div
-                        key={emoji}
-                        className="flex items-center gap-2 rounded-full border border-border/60 px-3 py-1 text-sm"
-                      >
-                        <span>{displayRocketEmoji(emoji)}</span>
-                        <span className="text-xs text-muted-foreground">{data?.count ?? 1}</span>
-                        {data?.usernames?.length ? (
-                          <span className="text-[11px] text-muted-foreground">
-                            {data.usernames.join(', ')}
-                          </span>
-                        ) : null}
-                        <button
-                          className="text-[11px] text-muted-foreground hover:text-foreground"
-                          onClick={() => {
-                            const messageId = item.id.replace('rc-msg-', '')
-                            rocketReactMutation.mutate({ messageId, emoji, shouldReact: false })
-                          }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </div>
+          <RocketchatDetails
+            items={items}
+            rocketReplyMutation={rocketReplyMutation}
+            rocketReactMutation={rocketReactMutation}
+            item={item}
+            rocketReply={rocketReply}
+            setRocketReply={setRocketReply}
+            rocketEmoji={rocketEmoji}
+            setRocketEmoji={setRocketEmoji}
+            rocketQuickReactions={rocketQuickReactions}
+            displayRocketEmoji={displayRocketEmoji}
+            normalizeRocketEmoji={normalizeRocketEmoji}
+            meta={meta}
+          />
         ) : null}
 
         <div className="border-b border-border/60 pb-6">

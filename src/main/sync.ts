@@ -1,11 +1,11 @@
+import { and, eq } from 'drizzle-orm'
 import { credentials as keytar } from './credentials'
-import { isDemo } from './runtime'
 import { db } from './db/db'
 import { externalItems, plannerState, syncConnections, syncCursors } from './db/schema'
-import { and, eq } from 'drizzle-orm'
-import { syncGitLab } from './integrations/gitlab'
 import { syncClickUp } from './integrations/clickup'
+import { syncGitLab } from './integrations/gitlab'
 import { syncRocketChat } from './integrations/rocketchat'
+import { isDemo } from './runtime'
 
 type SyncState = {
   source: string

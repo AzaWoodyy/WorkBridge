@@ -1,11 +1,11 @@
+import { PlanningChip } from '@renderer/components/PlanningChip'
 import { SourceBadge } from '@renderer/components/SourceBadge'
 import { StatusChip } from '@renderer/components/StatusChip'
-import { PlanningChip } from '@renderer/components/PlanningChip'
-import { cn } from '@renderer/lib/utils'
 import type { PlannerLane, WorkItem } from '@renderer/data/types'
+import { cn } from '@renderer/lib/utils'
 import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import remarkEmoji from 'remark-emoji'
+import remarkGfm from 'remark-gfm'
 
 export function ItemCard({
   item,

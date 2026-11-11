@@ -1,8 +1,8 @@
-import { extractClickUpIds } from './normalize'
+import { and, eq, or } from 'drizzle-orm'
 import { db } from '../db/db'
 import { externalItems, links, plannerState, syncConnections } from '../db/schema'
-import { and, eq, or } from 'drizzle-orm'
 import { notifyOnce } from '../notifications'
+import { extractClickUpIds } from './normalize'
 
 export type ClickUpConnection = {
   token: string

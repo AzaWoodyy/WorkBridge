@@ -1,6 +1,6 @@
 import * as Popover from '@radix-ui/react-popover'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@renderer/lib/utils'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 export type UserOption = { value: string; label?: string }
 
